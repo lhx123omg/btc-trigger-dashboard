@@ -102,5 +102,5 @@ try{
  setInterval(()=>emailLogin.update(),1000);
  window.addEventListener('storage',event=>{if(event.key==='btc-trigger-email-cooldown-until-v1')emailLogin.update();});
  client.auth.onAuthStateChange((event,value)=>{setTimeout(()=>acceptSession(value),0);});
- const {data,error}=await client.auth.getSession();if(error)throw error;await acceptSession(data.session);if(!data.session)text('login-message','请输入授权邮箱登录。');
+ const {data,error}=await client.auth.getSession();if(error)throw error;await acceptSession(data.session);if(!data.session)text('login-message',emailLogin.status().seconds?'上一笔邮件请求正在冷却，请勿重复点击；如已收到登录邮件，请使用该邮件。':'请输入授权邮箱登录。正常登录后无需每天申请邮件。');
 }catch(error){text('login-message',error.message);byId('login-submit').disabled=true;}
