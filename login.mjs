@@ -24,3 +24,14 @@ export function loginError(error){
  if(error?.status===429)return '登录请求过于频繁，请稍后再试；不会自动重复发送邮件。';
  return '登录邮件发送失败：'+(error?.message??'请检查网络后手动重试');
 }
+
+export async function clearRejectedSession(auth,status,rejectedToken){
+ if(status!==403)return false;
+ const current=await auth.getSession();
+ if(current.error)throw current.error;
+ const active=current.data.session;
+ // A delayed response for the previous account must not sign out a new account.
+ if(active&&active.access_token!==rejectedToken)return false;
+ if(active){const result=await auth.signOut({scope:'local'});if(result.error)throw result.error;}
+ return true;
+}

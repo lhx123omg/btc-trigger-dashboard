@@ -1,7 +1,7 @@
 import{createClient}from './vendor/supabase.js';
 import{utc,price,zoneNames,zoneStatus,monitorStatus,nearestZone,pushLabel}from './view-model.mjs';
 import{createChart}from './chart.mjs';
-import{authOptions,createEmailLogin,loginError}from './login.mjs';
+import{authOptions,createEmailLogin,loginError,clearRejectedSession}from './login.mjs';
 const endpoint='https://csyesqrldggjrtmdjbdi.supabase.co/functions/v1/btc-dashboard-api';
 const byId=id=>document.getElementById(id),text=(id,value)=>{byId(id).textContent=value;};
 const chart=createChart(byId('chart'));let client,session=null,state=null,loading=false,dirty=false,generation=0,refreshTimer,chartTimer;
@@ -25,7 +25,7 @@ async function api(action,body){
  const current=await client.auth.getSession();if(!current.data.session)throw Object.assign(Error('请重新登录'),{status:401});
  const response=await fetch(`${endpoint}?action=${action}`,{method:body===undefined?'GET':'POST',cache:'no-store',signal:AbortSignal.timeout(12000),
  headers:{Authorization:`Bearer ${current.data.session.access_token}`,apikey:client.supabaseKey,'x-region':'ap-southeast-1','Content-Type':'application/json'},...(body===undefined?{}:{body:JSON.stringify(body)})});
- const result=await response.json();if(!response.ok){if(response.status===401||response.status===403){clearSession();text('login-message',result.error??'请重新登录');}
+ const result=await response.json();if(!response.ok){if(response.status===401||response.status===403){const rejected=response.status===401||await clearRejectedSession(client.auth,response.status,current.data.session.access_token);if(rejected){clearSession();text('login-message',result.error??'请重新登录');}}
  throw Object.assign(Error(result.error??(result.status==='BACKOFF'?'Binance BACKOFF，图表暂停':'请求失败，请稍后再试')),{status:response.status});}return result;
 }
 function render(data){
