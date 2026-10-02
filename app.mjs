@@ -1,9 +1,16 @@
 import{createClient}from './vendor/supabase.js';
 import{utc,price,zoneNames,zoneStatus,monitorStatus,nearestZone,pushLabel}from './view-model.mjs';
 import{createChart}from './chart.mjs';
+import{authOptions,createEmailLogin,loginError}from './login.mjs';
 const endpoint='https://csyesqrldggjrtmdjbdi.supabase.co/functions/v1/btc-dashboard-api';
 const byId=id=>document.getElementById(id),text=(id,value)=>{byId(id).textContent=value;};
 const chart=createChart(byId('chart'));let client,session=null,state=null,loading=false,dirty=false,generation=0,refreshTimer,chartTimer;
+let emailLogin,resuming=false;
+let loginStorage;try{loginStorage=window.localStorage;}catch{}
+function renderLoginButton(status){
+ byId('login-submit').disabled=!client||status.disabled;
+ text('login-submit',status.busy?'正在检查 / 发送…':status.seconds?`请勿重复发送 · ${status.seconds}s`:'发送登录链接');
+}
 const keys=['weekly_enabled','daily_enabled','upper_enabled','lower_enabled','history_retention_days'];
 function badge(node,value){node.textContent=value;node.className='badge '+value;}
 function node(tag,value,className){const el=document.createElement(tag);if(value!=null)el.textContent=value;if(className)el.className=className;return el;}
@@ -64,10 +71,11 @@ async function acceptSession(value){
  chartTimer=setInterval(()=>{if(document.visibilityState==='visible')refreshChart();},300000);await refreshChart();
 }
 byId('login-form').addEventListener('submit',async event=>{
- event.preventDefault();if(!client)return;byId('login-submit').disabled=true;text('login-message','正在发送…');
- try{const{error}=await client.auth.signInWithOtp({email:byId('email').value.trim(),options:{emailRedirectTo:new URL('./',location.href).href}});if(error)throw error;
-  text('login-message','已发送登录邮件，请在此设备打开登录链接；如邮件提供验证码，也可在下方输入。');byId('verify-form').hidden=false;}
- catch(error){text('login-message','登录邮件发送失败：'+error.message);}finally{byId('login-submit').disabled=false;}
+ event.preventDefault();if(!emailLogin||emailLogin.status().disabled)return;text('login-message','正在检查现有会话…');
+ try{const result=await emailLogin.send(byId('email').value.trim(),new URL('./',location.href).href);
+  if(result.kind==='session'){text('login-message','已有登录会话，正在恢复；无需发送邮件。');await acceptSession(result.session);await refresh();return;}
+  if(result.kind==='sent'){text('login-message','邮件已发送，请勿重复点击。请在当前 Safari 打开邮件登录链接；以后刷新或重新打开会自动恢复登录。');byId('verify-form').hidden=false;}}
+ catch(error){text('login-message',loginError(error));}
 });
 byId('verify-form').addEventListener('submit',async event=>{event.preventDefault();try{const{error}=await client.auth.verifyOtp({email:byId('email').value.trim(),token:byId('otp').value.trim(),type:'email'});if(error)throw error;byId('otp').value='';}catch(error){text('login-message',error.message);}});
 byId('logout').addEventListener('click',async()=>{clearSession();const{error}=await client.auth.signOut({scope:'local'});text('login-message',error?'本机已退出；服务端退出失败，请检查网络。':'已退出登录。');});
@@ -79,10 +87,20 @@ byId('settings-form').addEventListener('submit',async event=>{
 byId('test-push').addEventListener('click',async()=>{byId('test-push').disabled=true;text('test-message','正在发送测试通知…');
  try{const result=await api('test',{});text('test-message',result.success?'Bark 已接收，请核对 iPhone 通知。':'测试失败');}catch(error){text('test-message',error.message);}finally{byId('test-push').disabled=false;}});
 byId('zoom-in').addEventListener('click',()=>chart.zoom(-5));byId('zoom-out').addEventListener('click',()=>chart.zoom(5));byId('refresh-chart').addEventListener('click',refreshChart);
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refresh();});
+async function resumeSession(){
+ if(!client||resuming)return;resuming=true;
+ try{const{data,error}=await client.auth.getSession();if(error)throw error;await acceptSession(data.session);if(data.session)await refresh();}
+ catch(error){if(session)message('page-message','会话恢复暂时失败，请检查网络；不会自动发送登录邮件。');}
+ finally{resuming=false;emailLogin?.update();}
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')resumeSession();});
+window.addEventListener('pageshow',resumeSession);
 try{
  const configResponse=await fetch(endpoint+'?action=config',{headers:{'x-region':'ap-southeast-1'},cache:'no-store',signal:AbortSignal.timeout(10000)});if(!configResponse.ok)throw Error('登录服务暂时不可用');
- const config=await configResponse.json();client=createClient(config.url,config.publishable_key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+ const config=await configResponse.json();client=createClient(config.url,config.publishable_key,{auth:authOptions});
+ emailLogin=createEmailLogin({auth:client.auth,storage:loginStorage,onChange:renderLoginButton});emailLogin.update();
+ setInterval(()=>emailLogin.update(),1000);
+ window.addEventListener('storage',event=>{if(event.key==='btc-trigger-email-cooldown-until-v1')emailLogin.update();});
  client.auth.onAuthStateChange((event,value)=>{setTimeout(()=>acceptSession(value),0);});
  const {data,error}=await client.auth.getSession();if(error)throw error;await acceptSession(data.session);if(!data.session)text('login-message','请输入授权邮箱登录。');
 }catch(error){text('login-message',error.message);byId('login-submit').disabled=true;}
