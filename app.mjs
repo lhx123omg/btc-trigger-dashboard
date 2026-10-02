@@ -17,7 +17,7 @@ function clearSession(){
 async function api(action,body){
  const current=await client.auth.getSession();if(!current.data.session)throw Object.assign(Error('请重新登录'),{status:401});
  const response=await fetch(`${endpoint}?action=${action}`,{method:body===undefined?'GET':'POST',cache:'no-store',signal:AbortSignal.timeout(12000),
- headers:{Authorization:`Bearer ${current.data.session.access_token}`,apikey:client.supabaseKey,'Content-Type':'application/json'},...(body===undefined?{}:{body:JSON.stringify(body)})});
+ headers:{Authorization:`Bearer ${current.data.session.access_token}`,apikey:client.supabaseKey,'x-region':'ap-southeast-1','Content-Type':'application/json'},...(body===undefined?{}:{body:JSON.stringify(body)})});
  const result=await response.json();if(!response.ok){if(response.status===401||response.status===403){clearSession();text('login-message',result.error??'请重新登录');}
  throw Object.assign(Error(result.error??(result.status==='BACKOFF'?'Binance BACKOFF，图表暂停':'请求失败，请稍后再试')),{status:response.status});}return result;
 }
@@ -81,7 +81,7 @@ byId('test-push').addEventListener('click',async()=>{byId('test-push').disabled=
 byId('zoom-in').addEventListener('click',()=>chart.zoom(-5));byId('zoom-out').addEventListener('click',()=>chart.zoom(5));byId('refresh-chart').addEventListener('click',refreshChart);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refresh();});
 try{
- const configResponse=await fetch(endpoint+'?action=config',{cache:'no-store',signal:AbortSignal.timeout(10000)});if(!configResponse.ok)throw Error('登录服务暂时不可用');
+ const configResponse=await fetch(endpoint+'?action=config',{headers:{'x-region':'ap-southeast-1'},cache:'no-store',signal:AbortSignal.timeout(10000)});if(!configResponse.ok)throw Error('登录服务暂时不可用');
  const config=await configResponse.json();client=createClient(config.url,config.publishable_key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
  client.auth.onAuthStateChange((event,value)=>{setTimeout(()=>acceptSession(value),0);});
  const {data,error}=await client.auth.getSession();if(error)throw error;await acceptSession(data.session);if(!data.session)text('login-message','请输入授权邮箱登录。');
