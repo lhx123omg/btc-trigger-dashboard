@@ -54,11 +54,11 @@
   <section class="primary-grid">
     <section class="panel chart-panel behavior-chart-panel" data-layout-id="behavior-chart" data-layout-label="4H 主行为图">
       <div class="section-title chart-heading">
-        <div><span class="kicker">4H MARKET BEHAVIOR</span><h2 id="chart-title">BTCUSDT · 4小时主行为图</h2><small id="chart-caption">completed 4H · Shared Daily Context · UTC</small></div>
+        <div><h2 id="chart-title">BTCUSDT · 4小时</h2><small id="chart-caption">日线关键区联动 · UTC</small></div>
         <div class="chart-tools"><button id="zoom-in" class="quiet" aria-label="放大4小时图表">＋</button><button id="zoom-out" class="quiet" aria-label="缩小4小时图表">−</button><button id="refresh-chart" class="quiet">刷新</button></div>
       </div>
       <canvas id="chart" aria-label="BTC 4小时K线、Daily共享关键位置与Shadow Alert"></canvas>
-      <div class="legend"><span class="shared-context">■ Daily Top 50% Extreme</span><span class="daily-high-line">━ Previous Daily High</span><span class="shadow-alert">● Shadow Alert</span><span>双指 / 按钮缩放</span></div>
+      <div class="legend"><span class="shared-context">■ 日线关键区</span><span class="daily-high-line">━ 前一日高点</span><span class="shadow-alert">● 触发信号</span><span>双指 / 按钮缩放</span></div>
       <p id="chart-message" class="subtle" role="status"></p>
     </section>
 
@@ -79,11 +79,11 @@
 
   <section class="panel context-chart-panel" data-layout-id="daily-context" data-layout-label="1D 背景图">
     <div class="section-title chart-heading">
-      <div><span class="kicker">1D CONTEXT</span><h2>BTCUSDT · 日线背景图</h2><small id="daily-chart-caption">completed 1D · 与4H共享同一关键位置背景 · UTC</small></div>
+      <div><h2>BTCUSDT · 日线</h2><small id="daily-chart-caption">关键位置来源 · UTC</small></div>
       <div class="chart-tools"><button id="daily-zoom-in" class="quiet" aria-label="放大日线图表">＋</button><button id="daily-zoom-out" class="quiet" aria-label="缩小日线图表">−</button><button id="refresh-daily-chart" class="quiet">刷新</button></div>
     </div>
     <canvas id="daily-chart" aria-label="BTC 日K与4小时图共享的Daily关键位置"></canvas>
-    <div class="legend"><span class="shared-context">■ Daily Top 50% Extreme</span><span class="daily-high-line">━ Previous Daily High</span><span class="reference-daily">● Reference Daily</span></div>
+    <div class="legend"><span class="shared-context">■ 日线关键区</span><span class="daily-high-line">━ 前一日高点</span><span class="reference-daily">● 参考日K</span></div>
     <p id="daily-chart-message" class="subtle" role="status"></p>
   </section>
 
