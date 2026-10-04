@@ -8,6 +8,52 @@ const byId=id=>document.getElementById(id),text=(id,value)=>{byId(id).textConten
 const chart=createChart(byId('chart'),{mode:'behavior'}),dailyChart=createChart(byId('daily-chart'),{mode:'context'});let client,session=null,state=null,loading=false,dirty=false,generation=0,refreshTimer,chartTimer;
 let emailLogin,resuming=false,chartLoader,dailyChartLoader;
 let loginStorage;try{loginStorage=window.localStorage;}catch{}
+const layoutStorageKey='btc-trigger-layout-v1';
+const layoutItems=[...document.querySelectorAll('[data-layout-id]')];
+let layoutEditing=false;
+function readLayout(){
+ try{const value=JSON.parse(localStorage.getItem(layoutStorageKey)||'{}');return value&&typeof value==='object'?value:{};}catch{return{};}
+}
+function writeLayout(value){try{localStorage.setItem(layoutStorageKey,JSON.stringify(value));}catch{}}
+let layoutState=readLayout();
+function layoutSummary(){
+ return layoutItems.map(el=>`${el.dataset.layoutLabel}: ${layoutState[el.dataset.layoutId]===false?'隐藏':'显示'}`).join('\n');
+}
+function updateLayoutEditor(){
+ const hidden=layoutItems.filter(el=>layoutState[el.dataset.layoutId]===false);
+ text('hidden-count',String(hidden.length));
+ const box=byId('hidden-components');box.replaceChildren();
+ if(!hidden.length){box.append(node('span','暂无隐藏组件','subtle'));return;}
+ for(const el of hidden){
+  const row=node('div',null,'hidden-component-row');
+  row.append(node('span',el.dataset.layoutLabel));
+  const restore=node('button','恢复','quiet');restore.type='button';restore.addEventListener('click',()=>setLayoutVisible(el.dataset.layoutId,true));
+  row.append(restore);box.append(row);
+ }
+}
+function setLayoutVisible(id,visible){
+ layoutState[id]=visible;writeLayout(layoutState);applyLayout();
+}
+function ensureLayoutHandle(el){
+ if(el.querySelector(':scope > .layout-hide-control'))return;
+ const button=node('button','隐藏','layout-hide-control quiet');button.type='button';button.title='从当前浏览器布局隐藏';
+ button.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();setLayoutVisible(el.dataset.layoutId,false);});
+ el.append(button);
+}
+function applyLayout(){
+ for(const el of layoutItems){
+  ensureLayoutHandle(el);
+  el.hidden=layoutState[el.dataset.layoutId]===false;
+  el.classList.toggle('layout-editing',layoutEditing);
+ }
+ document.body.classList.toggle('layout-edit-mode',layoutEditing);
+ byId('layout-editor').hidden=!layoutEditing;
+ byId('layout-edit-toggle').setAttribute('aria-expanded',String(layoutEditing));
+ text('layout-edit-toggle',layoutEditing?'完成布局':'编辑布局');
+ updateLayoutEditor();
+ window.dispatchEvent(new Event('resize'));
+}
+function setLayoutEditing(value){layoutEditing=Boolean(value);applyLayout();}
 function renderLoginButton(status){byId('login-submit').disabled=!client||status.disabled;text('login-submit',status.busy?'正在检查 / 发送…':status.seconds?`请勿重复发送 · ${status.seconds}s`:'发送登录链接');}
 const keys=['weekly_enabled','daily_enabled','upper_enabled','lower_enabled','history_retention_days'];
 function badge(node,value){node.textContent=statusText(value);node.className='badge '+value;}
@@ -70,6 +116,15 @@ byId('logout').addEventListener('click',async()=>{clearSession();const{error}=aw
 byId('settings-form').addEventListener('input',()=>{dirty=true;});
 byId('settings-form').addEventListener('submit',async event=>{event.preventDefault();const value=Object.fromEntries(keys.map(k=>[k,k==='history_retention_days'?Number(byId(k).value):byId(k).checked]));byId('save-settings').disabled=true;try{await api('settings',value);dirty=false;text('settings-message','已保存，旧系统触发状态保持。');await refresh();}catch(error){text('settings-message',chineseError(error));}finally{byId('save-settings').disabled=false;}});
 byId('test-push').addEventListener('click',async()=>{byId('test-push').disabled=true;text('test-message','正在发送测试通知…');try{const result=await api('test',{});text('test-message',result.success?'Bark 已接收，请核对 iPhone 通知。':'测试失败');}catch(error){text('test-message',chineseError(error));}finally{byId('test-push').disabled=false;}});
+byId('layout-edit-toggle').addEventListener('click',()=>setLayoutEditing(!layoutEditing));
+byId('layout-editor-close').addEventListener('click',()=>setLayoutEditing(false));
+byId('reset-layout').addEventListener('click',()=>{layoutState={};writeLayout(layoutState);applyLayout();text('layout-editor-message','已恢复默认布局。');});
+byId('copy-layout-config').addEventListener('click',async()=>{
+ const value=layoutSummary();
+ try{await navigator.clipboard.writeText(value);text('layout-editor-message','布局配置已复制，可以直接发给我。');}
+ catch{window.prompt('复制下面的布局配置：',value);text('layout-editor-message','已生成布局配置。');}
+});
+applyLayout();
 byId('zoom-in').addEventListener('click',()=>chart.zoom(-6));byId('zoom-out').addEventListener('click',()=>chart.zoom(6));byId('refresh-chart').addEventListener('click',refreshChart);byId('daily-zoom-in').addEventListener('click',()=>dailyChart.zoom(-6));byId('daily-zoom-out').addEventListener('click',()=>dailyChart.zoom(6));byId('refresh-daily-chart').addEventListener('click',refreshDailyChart);
 async function resumeSession(){if(!client||resuming)return;resuming=true;try{const{data,error}=await client.auth.getSession();if(error)throw error;await acceptSession(data.session);if(data.session)await refresh();}catch(error){if(session)message('page-message','会话恢复暂时失败，请检查网络；不会自动发送登录邮件。');}finally{resuming=false;emailLogin?.update();}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')resumeSession();});window.addEventListener('pageshow',resumeSession);
