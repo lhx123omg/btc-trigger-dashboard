@@ -97,14 +97,14 @@ chartLoader=createChartLoader({
  load:()=>api('chart',undefined,{interval:'4h'}),
  onSelection:()=>{},
  onLoading:value=>{byId('refresh-chart').disabled=value;byId('chart').setAttribute('aria-busy',String(value));if(value)text('chart-message','正在加载 4H K线…');},
- onCandles:candles=>{chart.update(state,candles,'4h');text('chart-caption','completed 4H · '+candles.length+' 根 · Shared Daily Context · UTC');const last=candles.at(-1);text('chart-price',last?price(last.close):'—');text('chart-price-meta',last?`4小时 · ${utc(last.close_time)} UTC · completed`:'—');text('chart-message','');},
+ onCandles:candles=>{chart.update(state,candles,'4h');text('chart-caption','4小时 · '+candles.length+' 根 · 日线关键区联动 · UTC');const last=candles.at(-1);text('chart-price',last?price(last.close):'—');text('chart-price-meta',last?`4小时 · ${utc(last.close_time)} UTC · 已完成`:'—');text('chart-message','');},
  onError:error=>{if(session)text('chart-message','4H K线加载失败：'+chineseError(error));}
 });
 dailyChartLoader=createChartLoader({
  load:()=>api('chart',undefined,{interval:'1d'}),
  onSelection:()=>{},
  onLoading:value=>{byId('refresh-daily-chart').disabled=value;byId('daily-chart').setAttribute('aria-busy',String(value));if(value)text('daily-chart-message','正在加载 1D K线…');},
- onCandles:candles=>{dailyChart.update(state,candles,'1d');text('daily-chart-caption','completed 1D · '+candles.length+' 根 · 与4H共享同一关键位置背景 · UTC');text('daily-chart-message','');},
+ onCandles:candles=>{dailyChart.update(state,candles,'1d');text('daily-chart-caption','日线 · '+candles.length+' 根 · 关键位置来源 · UTC');text('daily-chart-message','');},
  onError:error=>{if(session)text('daily-chart-message','1D K线加载失败：'+chineseError(error));}
 });
 async function refreshChart(){if(session)await chartLoader.select('4h',{force:true});}
