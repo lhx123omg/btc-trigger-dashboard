@@ -21,12 +21,22 @@ export function createChart(canvas,{mode='behavior'}={}){
   const slice=candles.slice(Math.max(0,end-count),end),latest=slice.at(-1)?.close;
   const shadow=state?.shadow?.state??{};
   const zoneLow=Number(shadow.current_zone_low),zoneHigh=Number(shadow.current_daily_high);
+  const referenceClose=Number(shadow.current_daily_close_ms);
   const hasShared=Number.isFinite(zoneLow)&&Number.isFinite(zoneHigh)&&zoneHigh>=zoneLow;
   const values=[...slice.flatMap(c=>[Number(c.low),Number(c.high)]),...(hasShared?[zoneLow,zoneHigh]:[]),...(latest!=null?[Number(latest)]:[])];
   if(!values.length){context.fillStyle='#8196aa';context.font='13px system-ui';context.fillText(mode==='context'?'正在加载 1D Context…':'正在加载 4H Market Behavior…',18,height/2);return;}
+
   let lo=Math.min(...values),hi=Math.max(...values);const margin=Math.max(10,(hi-lo)*.08);lo-=margin;hi+=margin;
   const y=v=>pad.top+(hi-Number(v))/(hi-lo)*h;
   const step=w/Math.max(1,slice.length),xAt=i=>pad.left+step*(i+.5);
+  const referenceIndex=mode==='context'&&Number.isFinite(referenceClose)?slice.findIndex(c=>Number(c.close_time)===referenceClose):-1;
+  const firstActiveIndex=mode==='behavior'&&Number.isFinite(referenceClose)?slice.findIndex(c=>Number(c.time)>referenceClose):-1;
+  const sharedStart=referenceIndex>=0
+   ?Math.max(pad.left,xAt(referenceIndex)-step*.52)
+   :firstActiveIndex>=0
+    ?Math.max(pad.left,xAt(firstActiveIndex)-step*.52)
+    :pad.left;
+  const sharedWidth=Math.max(1,pad.left+w-sharedStart);
 
   context.font='11px system-ui';context.textBaseline='middle';
   for(let i=0;i<=5;i++){
@@ -35,23 +45,46 @@ export function createChart(canvas,{mode='behavior'}={}){
    context.fillStyle='#8296aa';context.fillText(price(value),pad.left+w+7,at);
   }
 
-  if(hasShared){
-   const top=y(zoneHigh),bottom=y(zoneLow),broken=Boolean(shadow.current_broken);
-   context.fillStyle=broken?'rgba(255,157,89,.04)':'rgba(255,157,89,.12)';
-   context.fillRect(pad.left,top,w,Math.max(2,bottom-top));
-   context.strokeStyle=broken?'rgba(255,157,89,.30)':'rgba(255,157,89,.72)';
-   context.lineWidth=1;context.setLineDash(broken?[6,5]:[]);
-   context.strokeRect(pad.left,top,w,Math.max(2,bottom-top));context.setLineDash([]);
-   context.fillStyle=broken?'#a57c61':'#f5a76f';
-   context.fillText('Daily Top 50% Extreme'+(broken?' · inactive':''),pad.left+7,top+11);
-
-   const highY=y(zoneHigh);
-   context.strokeStyle='#5da9ff';context.lineWidth=1;context.setLineDash([7,4]);
-   context.beginPath();context.moveTo(pad.left,highY);context.lineTo(pad.left+w,highY);context.stroke();context.setLineDash([]);
-   context.fillStyle='#73b8ff';context.fillText('Previous Daily High',pad.left+7,Math.max(pad.top+10,highY-9));
+  if(referenceIndex>=0){
+   const x=xAt(referenceIndex),left=Math.max(pad.left,x-step*.58),width=Math.min(step*1.16,pad.left+w-left);
+   const glow=context.createLinearGradient(left,0,left+width,0);
+   glow.addColorStop(0,'rgba(255,157,89,.025)');
+   glow.addColorStop(.5,'rgba(255,157,89,.11)');
+   glow.addColorStop(1,'rgba(255,157,89,.025)');
+   context.fillStyle=glow;context.fillRect(left,pad.top,width,h);
   }
 
-  const referenceClose=Number(shadow.current_daily_close_ms);
+  if(hasShared){
+   const top=y(zoneHigh),bottom=y(zoneLow),bandHeight=Math.max(3,bottom-top),broken=Boolean(shadow.current_broken);
+   const fill=context.createLinearGradient(sharedStart,0,pad.left+w,0);
+   if(broken){
+    fill.addColorStop(0,'rgba(255,157,89,.06)');
+    fill.addColorStop(1,'rgba(255,157,89,.018)');
+   }else{
+    fill.addColorStop(0,'rgba(255,157,89,.17)');
+    fill.addColorStop(.32,'rgba(255,157,89,.115)');
+    fill.addColorStop(1,'rgba(255,157,89,.045)');
+   }
+   context.fillStyle=fill;context.fillRect(sharedStart,top,sharedWidth,bandHeight);
+
+   context.strokeStyle=broken?'rgba(255,157,89,.24)':'rgba(255,157,89,.48)';
+   context.lineWidth=1;context.setLineDash(broken?[6,5]:[]);
+   context.beginPath();context.moveTo(sharedStart,top);context.lineTo(pad.left+w,top);context.stroke();
+   context.beginPath();context.moveTo(sharedStart,bottom);context.lineTo(pad.left+w,bottom);context.stroke();
+   context.setLineDash([]);
+
+   const labelX=Math.min(pad.left+w-126,sharedStart+8);
+   context.fillStyle=broken?'#9f7d67':'#efad7f';
+   context.fillText('Daily Top 50% Extreme'+(broken?' · inactive':''),labelX,Math.min(bottom-9,top+11));
+
+   const highY=y(zoneHigh);
+   context.strokeStyle=broken?'rgba(93,169,255,.42)':'rgba(93,169,255,.84)';
+   context.lineWidth=1;context.setLineDash([7,4]);
+   context.beginPath();context.moveTo(sharedStart,highY);context.lineTo(pad.left+w,highY);context.stroke();context.setLineDash([]);
+   context.fillStyle=broken?'#668aaa':'#73b8ff';
+   context.fillText('Previous Daily High',labelX,Math.max(pad.top+10,highY-9));
+  }
+
   slice.forEach((c,i)=>{
    const x=xAt(i),up=Number(c.close)>=Number(c.open);
    const isReference=mode==='context'&&Number(c.close_time)===referenceClose;
@@ -60,9 +93,11 @@ export function createChart(canvas,{mode='behavior'}={}){
    const bw=Math.max(2,Math.min(12,step*.58)),bodyTop=y(Math.max(c.open,c.close)),bodyHeight=Math.max(1,Math.abs(y(c.open)-y(c.close)));
    context.fillRect(x-bw/2,bodyTop,bw,bodyHeight);
    if(isReference){
-    context.strokeStyle='#f5a76f';context.lineWidth=1.4;context.setLineDash([3,2]);
+    context.strokeStyle='rgba(255,173,114,.78)';context.lineWidth=1.2;context.setLineDash([3,3]);
     context.strokeRect(x-bw/2-4,y(c.high)-5,bw+8,Math.max(10,y(c.low)-y(c.high)+10));context.setLineDash([]);
-    context.fillStyle='#f5a76f';context.fillText('Reference Daily',Math.min(pad.left+w-82,x+8),Math.max(pad.top+12,y(c.high)-11));
+    context.fillStyle='#ffb37f';context.font='700 10px system-ui';
+    context.fillText('Reference Daily',Math.min(pad.left+w-84,x+8),Math.max(pad.top+12,y(c.high)-11));
+    context.font='11px system-ui';
    }
   });
 
