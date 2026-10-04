@@ -1,12 +1,119 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b1220"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="BTC 触发监控"><meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://csyesqrldggjrtmdjbdi.supabase.co; script-src 'self'; style-src 'self'; img-src 'self' data:; base-uri 'self'; form-action 'self'; object-src 'none'"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css"><title>BTC 触发监控</title></head><body>
-<main id="login" class="login"><div class="brand">BTC <span>触发监控</span></div><h1>私有监控终端</h1><p>登录后查看新加坡云端监控、针区与推送状态。</p><form id="login-form"><label>授权邮箱<input id="email" type="email" autocomplete="email" required placeholder="请输入授权邮箱"></label><button id="login-submit" type="submit">发送登录链接</button></form><form id="verify-form" hidden><label>邮箱验证码<input id="otp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{8}" minlength="8" maxlength="8" placeholder="邮箱提供验证码时可在此输入"></label><button type="submit">验证并登录</button></form><p id="login-message" role="status">正在连接登录服务…</p><small>使用 Supabase Auth，登录后自动保持会话。请在常用浏览器的普通模式打开邮件链接；邮件应用内置浏览器与常用浏览器不共享会话。未授权账号不能读取生产数据。</small></main>
-<div id="dashboard" hidden><header class="top"><div><strong>BTCUSDT</strong><span class="version">V1.1.1 · 私有终端</span></div><div class="top-right"><span class="status-label">监控状态</span><span id="monitor-status" class="badge">—</span><button id="logout" class="quiet">退出登录</button></div></header>
-<main class="shell"><section class="summary"><div class="price"><span>当前价格</span><strong id="current-price">—</strong><small>最新已完成 1分钟K线收盘价 · USDT</small></div><div class="health"><div><span>最近监控时间</span><b id="last-run">—</b></div><div><span>最近处理 1分钟K线</span><b id="last-minute">—</b></div><div><span>最近 Binance 成功请求</span><b id="last-binance">—</b></div><div><span>执行区域 / 检测模式</span><b>新加坡 / 1分钟区间检测</b></div></div></section>
-<div id="page-message" class="notice" role="status" hidden></div><div class="columns"><section class="panel chart-panel"><div class="section-title"><div><h2 id="chart-title">BTC · 4小时</h2><small id="chart-caption">后台行情 · 最多 250 根 · UTC</small></div><div class="chart-tools"><button id="zoom-in" class="quiet" aria-label="放大图表">＋</button><button id="zoom-out" class="quiet" aria-label="缩小图表">−</button><button id="refresh-chart" class="quiet">刷新</button></div></div>
-<div class="period-tabs" role="group" aria-label="K线展示周期"><button type="button" data-interval="15m" aria-pressed="false">15分钟</button><button type="button" data-interval="4h" aria-pressed="true" class="selected">4小时</button><button type="button" data-interval="1d" aria-pressed="false">1天</button><button type="button" data-interval="1w" aria-pressed="false">1周</button></div>
-<canvas id="chart" aria-label="BTC 4小时K线与四个正式针区"></canvas><div class="legend"><span class="weekly">■ 周线针区</span><span class="daily">■ 日线针区</span><span class="market">━ 当前价格（1分钟收盘）</span><span>双指 / 按钮缩放</span></div><p id="chart-message" class="subtle" role="status"></p></section>
-<aside class="monitor-panel"><section class="panel nearest"><span class="eyebrow">最近区域</span><h2 id="nearest-name">—</h2><div id="nearest-range" class="subtle">—</div><strong id="nearest-distance">—</strong><span id="nearest-status" class="badge">—</span></section><section id="zones" class="zone-grid" aria-label="四个当前监控针区"></section></aside></div>
-<div class="lower-columns"><section class="panel"><div class="section-title"><h2>触发记录</h2><small>最近最多 100 条 · UTC</small></div><div id="timeline" class="timeline"></div></section>
-<aside><section class="panel push"><div class="section-title"><h2>推送状态</h2><span id="push-status" class="badge">—</span></div><dl><div><dt>最近推送成功时间</dt><dd id="push-success">—</dd></div><div><dt>最近投递次数</dt><dd id="push-attempts">—</dd></div></dl><p id="push-error" class="subtle"></p><button id="test-push">发送测试通知</button><p id="test-message" role="status" class="subtle"></p></section>
-<section class="panel settings"><h2>设置</h2><form id="settings-form"><label class="switch"><span>周线监控</span><input id="weekly_enabled" type="checkbox" role="switch"></label><label class="switch"><span>日线监控</span><input id="daily_enabled" type="checkbox" role="switch"></label><label class="switch"><span>上针区监控</span><input id="upper_enabled" type="checkbox" role="switch"></label><label class="switch"><span>下针区监控</span><input id="lower_enabled" type="checkbox" role="switch"></label><label>历史记录保留天数<input id="history_retention_days" type="number" min="1" max="30" required inputmode="numeric"></label><p class="subtle">BTCUSDT · 1分钟区间检测 · 新加坡</p><button id="save-settings" type="submit">保存</button><p id="settings-message" class="subtle" role="status"></p></form></section></aside></div><footer><span id="account">—</span><span>UTC · 数据每 30 秒刷新 · 图表每 5 分钟刷新</span></footer></main></div><script type="module" src="app.mjs"></script></body></html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#071019">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="BTC 行为监控">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://csyesqrldggjrtmdjbdi.supabase.co; script-src 'self'; style-src 'self'; img-src 'self' data:; base-uri 'self'; form-action 'self'; object-src 'none'">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+<title>BTC 市场行为监控</title>
+</head>
+<body>
+<main id="login" class="login-shell">
+  <div class="login-card">
+    <div class="brand-lockup"><span class="brand-mark">BTC</span><span>MARKET BEHAVIOR</span></div>
+    <div class="login-copy"><span class="kicker">PRIVATE MONITOR</span><h1>市场行为信号终端</h1><p>查看 1D 背景、4H 行为 Shadow 与云端运行状态。</p></div>
+    <form id="login-form"><label>授权邮箱<input id="email" type="email" autocomplete="email" required placeholder="请输入授权邮箱"></label><button id="login-submit" type="submit">发送登录链接</button></form>
+    <form id="verify-form" hidden><label>邮箱验证码<input id="otp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{8}" minlength="8" maxlength="8" placeholder="输入 8 位验证码"></label><button type="submit">验证并登录</button></form>
+    <p id="login-message" class="form-message" role="status">正在连接登录服务…</p>
+    <small>Supabase Auth · 会话会自动保持 · 未授权账号不能读取项目数据。</small>
+  </div>
+</main>
+
+<div id="dashboard" hidden>
+<header class="topbar">
+  <div class="topbar-brand"><span class="brand-mark">BTC</span><div><strong>市场行为监控</strong><small>DAILY → 4H · SHADOW</small></div></div>
+  <div class="topbar-actions"><span id="shadow-header-status" class="badge">—</span><button id="logout" class="quiet">退出</button></div>
+</header>
+
+<main class="shell">
+  <section class="hero-grid">
+    <article class="hero-card hero-status">
+      <div class="hero-label"><span class="live-dot"></span>V0 SHADOW</div>
+      <div class="hero-main"><strong id="shadow-status-text">—</strong><span id="shadow-status" class="badge">—</span></div>
+      <p id="shadow-message" class="subtle">—</p>
+      <div class="hero-meta"><span>最近检查</span><b id="shadow-last-success">—</b></div>
+    </article>
+    <article class="hero-card">
+      <div class="hero-label">当前 Daily 顶部极值区</div>
+      <strong id="shadow-zone" class="metric-range">—</strong>
+      <p id="shadow-daily" class="subtle">—</p>
+    </article>
+    <article class="hero-card">
+      <div class="hero-label">本 Daily 生命周期</div>
+      <strong id="shadow-alert-count" class="metric-number">—</strong>
+      <p id="shadow-life" class="subtle">—</p>
+    </article>
+    <article class="hero-card market-card">
+      <div class="hero-label">图表最近收盘</div>
+      <strong id="chart-price" class="metric-number">—</strong>
+      <p id="chart-price-meta" class="subtle">加载 K 线后更新</p>
+    </article>
+  </section>
+
+  <div id="page-message" class="notice" role="status" hidden></div>
+
+  <section class="primary-grid">
+    <section class="panel chart-panel">
+      <div class="section-title chart-heading">
+        <div><span class="kicker">MARKET CONTEXT</span><h2 id="chart-title">BTC · 4小时</h2><small id="chart-caption">后台行情 · 最多 250 根 · UTC</small></div>
+        <div class="chart-tools"><button id="zoom-in" class="quiet" aria-label="放大图表">＋</button><button id="zoom-out" class="quiet" aria-label="缩小图表">−</button><button id="refresh-chart" class="quiet">刷新</button></div>
+      </div>
+      <div class="period-tabs" role="group" aria-label="K线展示周期"><button type="button" data-interval="15m" aria-pressed="false">15分钟</button><button type="button" data-interval="4h" aria-pressed="true" class="selected">4小时</button><button type="button" data-interval="1d" aria-pressed="false">1天</button><button type="button" data-interval="1w" aria-pressed="false">1周</button></div>
+      <canvas id="chart" aria-label="BTC K线与当前 V0 Shadow 区域"></canvas>
+      <div class="legend"><span class="shadow-legend">■ V0 Daily 顶部50%</span><span class="market">━ 最近K线收盘</span><span>双指 / 按钮缩放</span></div>
+      <p id="chart-message" class="subtle" role="status"></p>
+    </section>
+
+    <aside class="side-stack">
+      <section class="panel latest-shadow">
+        <div class="section-title"><div><span class="kicker">LATEST SHADOW EVENT</span><h2>最近命中</h2></div><span id="latest-shadow-badge" class="badge">—</span></div>
+        <div id="latest-shadow-event" class="empty-state">暂无 Shadow 命中</div>
+      </section>
+      <section class="panel system-card">
+        <div class="section-title"><div><span class="kicker">SYSTEM</span><h2>运行结构</h2></div></div>
+        <div class="system-row"><span>V0 Shadow Cron</span><b id="shadow-cron-label">每 4H 收盘后</b></div>
+        <div class="system-row"><span>Bark</span><b>Shadow 暂不推送</b></div>
+        <div class="system-row"><span>时区</span><b>UTC</b></div>
+        <div class="system-row"><span>区域</span><b>Singapore</b></div>
+      </section>
+    </aside>
+  </section>
+
+  <section class="panel shadow-history-panel">
+    <div class="section-title"><div><span class="kicker">LIVE SHADOW</span><h2>V0 Shadow 记录</h2></div><small>最近 20 条 · completed 4H · UTC</small></div>
+    <div id="shadow-timeline" class="shadow-timeline"></div>
+  </section>
+
+  <details class="legacy" open>
+    <summary><div><span class="kicker">LEGACY V1.1</span><strong>旧 Wick Monitor</strong></div><span id="monitor-status" class="badge">—</span></summary>
+    <div class="legacy-grid">
+      <section class="panel compact-panel">
+        <h2>旧系统状态</h2>
+        <div class="system-row"><span>最近运行</span><b id="last-run">—</b></div>
+        <div class="system-row"><span>最近处理 1m</span><b id="last-minute">—</b></div>
+        <div class="system-row"><span>最近成功</span><b id="last-binance">—</b></div>
+        <p class="subtle">Weekly / Daily 已暂停。以下区域与历史仅用于保留旧系统上下文。</p>
+        <div id="zones" class="zone-grid" aria-label="旧 V1.1 针区"></div>
+      </section>
+      <section class="panel compact-panel">
+        <div class="section-title"><h2>旧触发记录</h2><small>最多 100 条</small></div><div id="timeline" class="timeline"></div>
+      </section>
+    </div>
+  </details>
+
+  <section class="utility-grid">
+    <section class="panel push"><div class="section-title"><div><span class="kicker">BARK</span><h2>推送与测试</h2></div><span id="push-status" class="badge">—</span></div><dl><div><dt>最近成功</dt><dd id="push-success">—</dd></div><div><dt>最近投递次数</dt><dd id="push-attempts">—</dd></div></dl><p id="push-error" class="subtle"></p><button id="test-push">发送测试通知</button><p id="test-message" role="status" class="subtle"></p></section>
+    <section class="panel settings"><div class="section-title"><div><span class="kicker">LEGACY SETTINGS</span><h2>旧 V1.1 设置</h2></div></div><form id="settings-form"><label class="switch"><span>周线监控</span><input id="weekly_enabled" type="checkbox" role="switch"></label><label class="switch"><span>日线监控</span><input id="daily_enabled" type="checkbox" role="switch"></label><label class="switch"><span>上针区监控</span><input id="upper_enabled" type="checkbox" role="switch"></label><label class="switch"><span>下针区监控</span><input id="lower_enabled" type="checkbox" role="switch"></label><label>历史记录保留天数<input id="history_retention_days" type="number" min="1" max="30" required inputmode="numeric"></label><button id="save-settings" type="submit">保存旧系统设置</button><p id="settings-message" class="subtle" role="status"></p></form></section>
+  </section>
+
+  <footer><span id="account">—</span><span>Shadow 状态 30 秒刷新 · K线 5 分钟刷新 · UTC</span></footer>
+</main>
+</div>
+<script type="module" src="app.mjs"></script>
+</body></html>
