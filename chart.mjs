@@ -47,42 +47,26 @@ export function createChart(canvas,{mode='behavior'}={}){
 
   if(referenceIndex>=0){
    const x=xAt(referenceIndex),left=Math.max(pad.left,x-step*.58),width=Math.min(step*1.16,pad.left+w-left);
-   const glow=context.createLinearGradient(left,0,left+width,0);
-   glow.addColorStop(0,'rgba(45,212,191,.035)');
-   glow.addColorStop(.5,'rgba(45,212,191,.16)');
-   glow.addColorStop(1,'rgba(45,212,191,.035)');
-   context.fillStyle=glow;context.fillRect(left,pad.top,width,h);
+   context.fillStyle='rgba(8,60,54,.38)';
+   context.fillRect(left,pad.top,width,h);
   }
 
   if(hasShared){
    const top=y(zoneHigh),bottom=y(zoneLow),bandHeight=Math.max(3,bottom-top),broken=Boolean(shadow.current_broken);
-   const fill=context.createLinearGradient(sharedStart,0,pad.left+w,0);
-   if(broken){
-    fill.addColorStop(0,'rgba(148,163,184,.08)');
-    fill.addColorStop(1,'rgba(148,163,184,.035)');
-   }else{
-    fill.addColorStop(0,'rgba(45,212,191,.20)');
-    fill.addColorStop(.32,'rgba(45,212,191,.16)');
-    fill.addColorStop(1,'rgba(45,212,191,.11)');
-   }
-   context.fillStyle=fill;context.fillRect(sharedStart,top,sharedWidth,bandHeight);
+   context.fillStyle=broken?'rgba(70,78,88,.34)':'rgba(8,60,54,.50)';
+   context.fillRect(sharedStart,top,sharedWidth,bandHeight);
 
-   context.strokeStyle=broken?'rgba(148,163,184,.28)':'rgba(45,212,191,.62)';
+   context.strokeStyle=broken?'rgba(148,163,184,.34)':'rgba(24,125,121,.90)';
    context.lineWidth=1;context.setLineDash(broken?[6,5]:[]);
    context.beginPath();context.moveTo(sharedStart,top);context.lineTo(pad.left+w,top);context.stroke();
    context.beginPath();context.moveTo(sharedStart,bottom);context.lineTo(pad.left+w,bottom);context.stroke();
    context.setLineDash([]);
 
-   const labelX=Math.min(pad.left+w-126,sharedStart+8);
-   context.fillStyle=broken?'#8794a5':'#74e0d0';
-   context.fillText('日线关键区'+(broken?' · 已失效':''),labelX,Math.min(bottom-9,top+11));
-
    const highY=y(zoneHigh);
    context.strokeStyle=broken?'rgba(93,169,255,.42)':'rgba(93,169,255,.84)';
    context.lineWidth=1;context.setLineDash([7,4]);
    context.beginPath();context.moveTo(sharedStart,highY);context.lineTo(pad.left+w,highY);context.stroke();context.setLineDash([]);
-   context.fillStyle=broken?'#668aaa':'#73b8ff';
-   context.fillText('前一日高点',labelX,Math.max(pad.top+10,highY-9));
+
   }
 
   slice.forEach((c,i)=>{
@@ -93,11 +77,8 @@ export function createChart(canvas,{mode='behavior'}={}){
    const bw=Math.max(2,Math.min(12,step*.58)),bodyTop=y(Math.max(c.open,c.close)),bodyHeight=Math.max(1,Math.abs(y(c.open)-y(c.close)));
    context.fillRect(x-bw/2,bodyTop,bw,bodyHeight);
    if(isReference){
-    context.strokeStyle='rgba(45,212,191,.82)';context.lineWidth=1.2;context.setLineDash([3,3]);
+    context.strokeStyle='rgba(24,125,121,.92)';context.lineWidth=1.2;context.setLineDash([3,3]);
     context.strokeRect(x-bw/2-4,y(c.high)-5,bw+8,Math.max(10,y(c.low)-y(c.high)+10));context.setLineDash([]);
-    context.fillStyle='#86eadc';context.font='700 10px system-ui';
-    context.fillText('参考日K',Math.min(pad.left+w-58,x+8),Math.max(pad.top+12,y(c.high)-11));
-    context.font='11px system-ui';
    }
   });
 
