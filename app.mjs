@@ -9,6 +9,8 @@ const chart=createChart(byId('chart'),{mode:'behavior'}),dailyChart=createChart(
 let emailLogin,resuming=false,chartLoader,dailyChartLoader;
 let loginStorage;try{loginStorage=window.localStorage;}catch{}
 const layoutStorageKey='btc-trigger-layout-v1';
+const signalRatingStorageKey='btc-trigger-signal-ratings-v1';
+const signalRatingOrder=['观察中','有用','没用'];
 const layoutItems=[...document.querySelectorAll('[data-layout-id]')];
 let layoutEditing=false;
 function readLayout(){
@@ -16,6 +18,26 @@ function readLayout(){
 }
 function writeLayout(value){try{localStorage.setItem(layoutStorageKey,JSON.stringify(value));}catch{}}
 let layoutState=readLayout();
+function readSignalRatings(){
+ try{const value=JSON.parse(localStorage.getItem(signalRatingStorageKey)||'{}');return value&&typeof value==='object'?value:{};}catch{return{};}
+}
+function writeSignalRatings(value){try{localStorage.setItem(signalRatingStorageKey,JSON.stringify(value));}catch{}}
+let signalRatings=readSignalRatings();
+function renderSignalRatings(){
+ document.querySelectorAll('[data-signal-rating]').forEach(button=>{
+  const id=button.dataset.signalRating;
+  const value=signalRatingOrder.includes(signalRatings[id])?signalRatings[id]:'观察中';
+  button.textContent=value;
+  button.dataset.ratingValue=value;
+ });
+}
+function cycleSignalRating(button){
+ const id=button.dataset.signalRating;
+ const current=signalRatingOrder.includes(signalRatings[id])?signalRatings[id]:'观察中';
+ signalRatings[id]=signalRatingOrder[(signalRatingOrder.indexOf(current)+1)%signalRatingOrder.length];
+ writeSignalRatings(signalRatings);
+ renderSignalRatings();
+}
 function layoutSummary(){
  return layoutItems.map(el=>`${el.dataset.layoutLabel}: ${layoutState[el.dataset.layoutId]===false?'隐藏':'显示'}`).join('\n');
 }
@@ -33,6 +55,8 @@ function updateLayoutEditor(){
 }
 function setLayoutVisible(id,visible){
  layoutState[id]=visible;writeLayout(layoutState);applyLayout();
+renderSignalRatings();
+document.querySelectorAll('[data-signal-rating]').forEach(button=>button.addEventListener('click',()=>cycleSignalRating(button)));
 }
 function ensureLayoutHandle(el){
  if(el.querySelector(':scope > .layout-hide-control'))return;
@@ -79,7 +103,7 @@ function render(data){
  const s=data.shadow?.state??{},shadowEvents=data.shadow?.events??[],ss=shadowStatus(data);badge(byId('shadow-header-status'),ss);badge(byId('shadow-status'),ss);text('shadow-status-text',statusText(ss));
  text('shadow-last-success',utc(s.last_success_at)+' UTC');text('shadow-zone',s.current_zone_low!=null?`${price(s.current_zone_low)} — ${price(s.current_daily_high)}`:'等待 Daily 参考');text('shadow-daily',s.current_daily_close_ms?`参考 Daily · ${utc(Number(s.current_daily_close_ms)-86_399_999)} → ${utc(s.current_daily_close_ms)} UTC`:'—');
  text('shadow-alert-count',`${Number(s.current_alert_count??0)} / 2`);text('shadow-life',s.current_broken?'4H 实体已突破 Daily High · 本参考失效':'Daily High 尚未被 4H 实体突破');
- const shadowMessage=ss==='BACKOFF'?`Binance 退避中 · Shadow cursor 不推进`:ss==='ERROR'?`Shadow 异常 · ${chineseError({message:s.last_error??'最近检查失败'})}`:s.current_broken?'当前 Daily 顶部参考已失效，等待下一根 completed Daily。':'每根 completed 4H 后自动检查；当前仅做 Shadow 记录，不发 Bark。';text('shadow-message',shadowMessage);
+ const shadowMessage=ss==='BACKOFF'?`Binance 退避中 · Shadow cursor 不推进`:ss==='ERROR'?`Shadow 异常 · ${chineseError({message:s.last_error??'最近检查失败'})}`:s.current_broken?'当前 Daily 顶部参考已失效，等待下一根 completed Daily。':'每根 completed 4H 后自动检查；命中后推送 Bark。';text('shadow-message',shadowMessage);
  message('page-message',ss==='BACKOFF'||ss==='ERROR'?shadowMessage:null);
  const latest=shadowEvents[0];badge(byId('latest-shadow-badge'),latest?'TRIGGERED':'WAIT');byId('latest-shadow-event').replaceChildren(latest?shadowEventCard(latest,true):node('div','暂无 Shadow 命中','empty-state'));
  byId('shadow-timeline').replaceChildren(...(shadowEvents.length?shadowEvents.map(e=>shadowEventCard(e,false)):[node('p','暂无 Shadow 记录','subtle')]));
