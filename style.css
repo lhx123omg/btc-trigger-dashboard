@@ -21,3 +21,18 @@
 .layout-edit-mode [data-layout-id].layout-editing>.layout-hide-control{display:block}
 .primary-grid:has(>.side-stack[hidden]){grid-template-columns:1fr}.primary-grid:has(>.behavior-chart-panel[hidden]){grid-template-columns:1fr}.utility-grid:has(>[hidden]){grid-template-columns:1fr}
 @media(max-width:650px){.layout-editor{top:62px;right:10px;width:calc(100vw - 20px)}.layout-editor-actions{grid-template-columns:1fr}.topbar-actions{gap:6px}.topbar-actions button{padding:7px 9px;min-height:36px}}
+
+.signal-registry{padding-bottom:12px}
+.signal-count{display:inline-grid;place-items:center;min-width:27px;height:27px;padding:0 8px;border:1px solid var(--line2);border-radius:20px;color:#bfd0df;background:#101d29;font-size:11px;font-weight:800}
+.signal-registry-list{display:grid;gap:8px}
+.signal-registry-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:9px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.signal-registry-row:first-child{border-top:0;padding-top:2px}
+.signal-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 10px rgba(80,211,170,.55)}
+.signal-registry-main{min-width:0;display:flex;flex-direction:column;gap:2px}
+.signal-registry-main strong{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.signal-registry-main small{font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.signal-rating{min-height:28px;padding:4px 8px;border-radius:20px;font-size:10px;background:#14263a;border-color:#3b5368;color:#bdcddd}
+.signal-rating[data-rating-value="有用"]{color:var(--green);border-color:#2e725e;background:#0b2a22}
+.signal-rating[data-rating-value="没用"]{color:#ff9aaa;border-color:#7e3e4a;background:#301822}
+.signal-rating[data-rating-value="观察中"]{color:var(--amber);border-color:#6e592c;background:#2c2514}
+@media(max-width:650px){.signal-registry-row{grid-template-columns:auto minmax(0,1fr) auto}.signal-registry-main strong{font-size:12px}}
