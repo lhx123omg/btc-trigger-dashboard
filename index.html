@@ -67,12 +67,29 @@
         <div class="section-title"><div><span class="kicker">LATEST SHADOW EVENT</span><h2>最近命中</h2></div><span id="latest-shadow-badge" class="badge">—</span></div>
         <div id="latest-shadow-event" class="empty-state">暂无 Shadow 命中</div>
       </section>
-      <section class="panel system-card">
-        <div class="section-title"><div><span class="kicker">SYSTEM</span><h2>运行结构</h2></div></div>
-        <div class="system-row"><span>V0 Shadow Cron</span><b id="shadow-cron-label">每 4H 收盘后</b></div>
-        <div class="system-row"><span>Bark</span><b>Shadow 暂不推送</b></div>
-        <div class="system-row"><span>时区</span><b>UTC</b></div>
-        <div class="system-row"><span>区域</span><b>Singapore</b></div>
+      <section class="panel signal-registry" aria-label="已部署提醒">
+        <div class="section-title">
+          <div><span class="kicker">SIGNALS</span><h2>已部署提醒</h2></div>
+          <span class="signal-count">2</span>
+        </div>
+        <div class="signal-registry-list">
+          <article class="signal-registry-row">
+            <span class="signal-dot" aria-hidden="true"></span>
+            <div class="signal-registry-main">
+              <strong>Daily 顶部 4H 拒绝</strong>
+              <small>1D → 4H · DAILY_HIGH_4H_STOP_V0</small>
+            </div>
+            <button class="signal-rating" type="button" data-signal-rating="DAILY_HIGH_4H_STOP_V0" title="点击切换评价">观察中</button>
+          </article>
+          <article class="signal-registry-row">
+            <span class="signal-dot" aria-hidden="true"></span>
+            <div class="signal-registry-main">
+              <strong>4H FVG 形成提醒</strong>
+              <small>4H · FVG_4H_V0</small>
+            </div>
+            <button class="signal-rating" type="button" data-signal-rating="FVG_4H_V0" title="点击切换评价">观察中</button>
+          </article>
+        </div>
       </section>
     </aside>
   </section>
