@@ -117,26 +117,8 @@
     <div id="shadow-timeline" class="shadow-timeline"></div>
   </section>
 
-  <details class="legacy" open data-layout-id="legacy-v11" data-layout-label="Legacy V1.1">
-    <summary><div><span class="kicker">LEGACY V1.1</span><strong>旧 Wick Monitor</strong></div><span id="monitor-status" class="badge">—</span></summary>
-    <div class="legacy-grid">
-      <section class="panel compact-panel">
-        <h2>旧系统状态</h2>
-        <div class="system-row"><span>最近运行</span><b id="last-run">—</b></div>
-        <div class="system-row"><span>最近处理 1m</span><b id="last-minute">—</b></div>
-        <div class="system-row"><span>最近成功</span><b id="last-binance">—</b></div>
-        <p class="subtle">Weekly / Daily 已暂停。以下区域与历史仅用于保留旧系统上下文。</p>
-        <div id="zones" class="zone-grid" aria-label="旧 V1.1 针区"></div>
-      </section>
-      <section class="panel compact-panel">
-        <div class="section-title"><h2>旧触发记录</h2><small>最多 100 条</small></div><div id="timeline" class="timeline"></div>
-      </section>
-    </div>
-  </details>
-
   <section class="utility-grid">
     <section class="panel push" data-layout-id="bark-panel" data-layout-label="Bark 推送与测试"><div class="section-title"><div><span class="kicker">BARK</span><h2>推送与测试</h2></div><span id="push-status" class="badge">—</span></div><dl><div><dt>最近成功</dt><dd id="push-success">—</dd></div><div><dt>最近投递次数</dt><dd id="push-attempts">—</dd></div></dl><p id="push-error" class="subtle"></p><button id="test-push">发送测试通知</button><p id="test-message" role="status" class="subtle"></p></section>
-    <section class="panel settings" data-layout-id="legacy-settings" data-layout-label="旧 V1.1 设置"><div class="section-title"><div><span class="kicker">LEGACY SETTINGS</span><h2>旧 V1.1 设置</h2></div></div><form id="settings-form"><label class="switch"><span>周线监控</span><input id="weekly_enabled" type="checkbox" role="switch"></label><label class="switch"><span>日线监控</span><input id="daily_enabled" type="checkbox" role="switch"></label><label class="switch"><span>上针区监控</span><input id="upper_enabled" type="checkbox" role="switch"></label><label class="switch"><span>下针区监控</span><input id="lower_enabled" type="checkbox" role="switch"></label><label>历史记录保留天数<input id="history_retention_days" type="number" min="1" max="30" required inputmode="numeric"></label><button id="save-settings" type="submit">保存旧系统设置</button><p id="settings-message" class="subtle" role="status"></p></form></section>
   </section>
 
   <footer><span id="account">—</span><span>Shadow 状态 30 秒刷新 · K线 5 分钟刷新 · UTC</span></footer>
