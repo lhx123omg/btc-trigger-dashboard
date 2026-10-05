@@ -1,11 +1,11 @@
 import{createClient}from './vendor/supabase.js';
-import{utc,price,zoneNames,zoneStatus,monitorStatus,shadowStatus,pushLabel,statusText,zoneText,detectionText,chineseError}from './view-model.mjs';
+import{utc,price,shadowStatus,statusText,chineseError}from './view-model.mjs';
 import{createChart}from './chart.mjs';
 import{createChartLoader}from './chart-periods.mjs';
 import{authOptions,createEmailLogin,loginError,clearRejectedSession}from './login.mjs';
 const endpoint='https://csyesqrldggjrtmdjbdi.supabase.co/functions/v1/btc-dashboard-api';
 const byId=id=>document.getElementById(id),text=(id,value)=>{byId(id).textContent=value;};
-const chart=createChart(byId('chart'),{mode:'behavior'}),dailyChart=createChart(byId('daily-chart'),{mode:'context'});let client,session=null,state=null,loading=false,dirty=false,generation=0,refreshTimer,chartTimer;
+const chart=createChart(byId('chart'),{mode:'behavior'}),dailyChart=createChart(byId('daily-chart'),{mode:'context'});let client,session=null,state=null,loading=false,generation=0,refreshTimer,chartTimer;
 let emailLogin,resuming=false,chartLoader,dailyChartLoader;
 let loginStorage;try{loginStorage=window.localStorage;}catch{}
 const layoutStorageKey='btc-trigger-layout-v1';
@@ -55,15 +55,14 @@ function applyLayout(){
 }
 function setLayoutEditing(value){layoutEditing=Boolean(value);applyLayout();}
 function renderLoginButton(status){byId('login-submit').disabled=!client||status.disabled;text('login-submit',status.busy?'正在检查 / 发送…':status.seconds?`请勿重复发送 · ${status.seconds}s`:'发送登录链接');}
-const keys=['weekly_enabled','daily_enabled','upper_enabled','lower_enabled','history_retention_days'];
 function badge(node,value){node.textContent=statusText(value);node.className='badge '+value;}
 function node(tag,value,className){const el=document.createElement(tag);if(value!=null)el.textContent=value;if(className)el.className=className;return el;}
 function message(id,value){text(id,value??'');byId(id).hidden=!value;}
 function clearSession(){
  generation++;session=null;state=null;clearInterval(refreshTimer);clearInterval(chartTimer);byId('dashboard').hidden=true;byId('login').hidden=false;
- byId('zones').replaceChildren();byId('timeline').replaceChildren();byId('shadow-timeline').replaceChildren();byId('latest-shadow-event').replaceChildren();chart.clear();dailyChart.clear();chartLoader?.clear();dailyChartLoader?.clear();
- for(const id of ['account','last-run','last-minute','last-binance','shadow-last-success','shadow-zone','shadow-daily','shadow-alert-count','shadow-life','chart-price','chart-price-meta'])text(id,'—');
- for(const id of ['push-error','test-message','settings-message','shadow-message'])text(id,'');dirty=false;
+ byId('shadow-timeline').replaceChildren();byId('latest-shadow-event').replaceChildren();chart.clear();dailyChart.clear();chartLoader?.clear();dailyChartLoader?.clear();
+ for(const id of ['account','shadow-last-success','shadow-zone','shadow-daily','shadow-alert-count','shadow-life','chart-price','chart-price-meta'])text(id,'—');
+ for(const id of ['push-error','test-message','shadow-message'])text(id,'');
 }
 async function api(action,body,params={}){
  const current=await client.auth.getSession();if(!current.data.session)throw Object.assign(Error('请重新登录'),{status:401});
@@ -85,11 +84,8 @@ function render(data){
  const latest=shadowEvents[0];badge(byId('latest-shadow-badge'),latest?'TRIGGERED':'WAIT');byId('latest-shadow-event').replaceChildren(latest?shadowEventCard(latest,true):node('div','暂无 Shadow 命中','empty-state'));
  byId('shadow-timeline').replaceChildren(...(shadowEvents.length?shadowEvents.map(e=>shadowEventCard(e,false)):[node('p','暂无 Shadow 记录','subtle')]));
 
- const legacy=monitorStatus(data);badge(byId('monitor-status'),legacy);text('last-run',utc(data.last_run_at)+' UTC');text('last-minute',utc(data.last_processed_1m_close_ms)+' UTC');text('last-binance',utc(data.last_success_at)+' UTC');
- const cards=zoneNames.map(name=>{const z=data.zones.find(z=>z.hierarchy+' '+z.side===name),card=node('article',null,'zone'),head=node('div',null,'zone-head');head.append(node('h3',z?zoneText(z):zoneText({hierarchy:name.split(' ')[0],side:name.split(' ')[1]}),name.startsWith('Weekly')?'weekly':'daily'));const pill=node('span',null);badge(pill,z?zoneStatus(z,data.settings):'WAIT');head.append(pill);card.append(head);card.append(node('div',z?`${price(z.zone_low)} — ${price(z.zone_high)}`:'等待父级数据','range'));card.append(node('small',z?`父级 ${utc(z.parent_open_ms)} → ${utc(z.parent_close_ms)} UTC`:'—'));return card;});byId('zones').replaceChildren(...cards);
- const events=data.history.slice(0,100).map(h=>{const card=node('article',null,'event'),head=node('div',null,'event-head');head.append(node('strong',zoneText(h)));const pill=node('span',null);badge(pill,pushLabel(h));head.append(pill);card.append(head);card.append(node('div',price(h.zone_low)+' — '+price(h.zone_high)+' USDT','range'));const dl=node('dl');for(const [label,value]of[['市场触碰时间',utc(h.detected_1m_open_ms)+' → '+utc(h.detected_1m_close_ms)+' UTC'],['检测时间',utc(h.detected_at)+' UTC'],['检测模式',detectionText(h.detection_mode)],['Bark 推送',statusText(pushLabel(h))+' · '+h.push_attempts+' 次投递']]){const row=node('div');row.append(node('dt',label),node('dd',value));dl.append(row);}card.append(dl);return card;});byId('timeline').replaceChildren(...(events.length?events:[node('p','暂无旧触发记录','subtle')]));
  badge(byId('push-status'),data.push.status);text('push-success',utc(data.push.last_success_at)+' UTC');text('push-attempts',String(data.push.attempts??0));text('push-error',data.push.last_failure?.error||data.push.error?chineseError({message:data.push.last_failure?.error??data.push.error}):'');
- if(!dirty)for(const key of keys){if(key==='history_retention_days')byId(key).value=data.settings[key];else byId(key).checked=data.settings[key];}
+
  chart.update(data);dailyChart.update(data);
 }
 async function refresh(){if(!session||loading)return;loading=true;const epoch=generation;try{const data=await api('state');if(epoch!==generation)return;state=data;render(data);byId('dashboard').hidden=false;byId('login').hidden=true;}catch(error){if(session){message('page-message','后台读取失败，显示上次快照；'+chineseError(error));badge(byId('shadow-header-status'),'DELAYED');}}finally{loading=false;}}
@@ -113,8 +109,6 @@ async function acceptSession(value){if(!value){clearSession();return;}if(session
 byId('login-form').addEventListener('submit',async event=>{event.preventDefault();if(!emailLogin||emailLogin.status().disabled)return;text('login-message','正在检查现有会话…');try{const result=await emailLogin.send(byId('email').value.trim(),new URL('./',location.href).href);if(result.kind==='session'){text('login-message','已有登录会话，正在恢复。');await acceptSession(result.session);await refresh();return;}if(result.kind==='sent'){text('login-message','邮件已发送，请在当前浏览器打开登录链接。');byId('verify-form').hidden=false;}}catch(error){text('login-message',loginError(error));}});
 byId('verify-form').addEventListener('submit',async event=>{event.preventDefault();try{const{error}=await client.auth.verifyOtp({email:byId('email').value.trim(),token:byId('otp').value.trim(),type:'email'});if(error)throw error;byId('otp').value='';}catch(error){text('login-message',chineseError(error));}});
 byId('logout').addEventListener('click',async()=>{clearSession();const{error}=await client.auth.signOut({scope:'local'});text('login-message',error?'本机已退出；服务端退出失败，请检查网络。':'已退出登录。');});
-byId('settings-form').addEventListener('input',()=>{dirty=true;});
-byId('settings-form').addEventListener('submit',async event=>{event.preventDefault();const value=Object.fromEntries(keys.map(k=>[k,k==='history_retention_days'?Number(byId(k).value):byId(k).checked]));byId('save-settings').disabled=true;try{await api('settings',value);dirty=false;text('settings-message','已保存，旧系统触发状态保持。');await refresh();}catch(error){text('settings-message',chineseError(error));}finally{byId('save-settings').disabled=false;}});
 byId('test-push').addEventListener('click',async()=>{byId('test-push').disabled=true;text('test-message','正在发送测试通知…');try{const result=await api('test',{});text('test-message',result.success?'Bark 已接收，请核对 iPhone 通知。':'测试失败');}catch(error){text('test-message',chineseError(error));}finally{byId('test-push').disabled=false;}});
 byId('layout-edit-toggle').addEventListener('click',()=>setLayoutEditing(!layoutEditing));
 byId('layout-editor-close').addEventListener('click',()=>setLayoutEditing(false));
