@@ -55,8 +55,6 @@ function updateLayoutEditor(){
 }
 function setLayoutVisible(id,visible){
  layoutState[id]=visible;writeLayout(layoutState);applyLayout();
-renderSignalRatings();
-document.querySelectorAll('[data-signal-rating]').forEach(button=>button.addEventListener('click',()=>cycleSignalRating(button)));
 }
 function ensureLayoutHandle(el){
  if(el.querySelector(':scope > .layout-hide-control'))return;
@@ -143,6 +141,8 @@ byId('copy-layout-config').addEventListener('click',async()=>{
  catch{window.prompt('复制下面的布局配置：',value);text('layout-editor-message','已生成布局配置。');}
 });
 applyLayout();
+renderSignalRatings();
+document.querySelectorAll('[data-signal-rating]').forEach(button=>button.addEventListener('click',()=>cycleSignalRating(button)));
 byId('zoom-in').addEventListener('click',()=>chart.zoom(-6));byId('zoom-out').addEventListener('click',()=>chart.zoom(6));byId('refresh-chart').addEventListener('click',refreshChart);byId('daily-zoom-in').addEventListener('click',()=>dailyChart.zoom(-6));byId('daily-zoom-out').addEventListener('click',()=>dailyChart.zoom(6));byId('refresh-daily-chart').addEventListener('click',refreshDailyChart);
 async function resumeSession(){if(!client||resuming)return;resuming=true;try{const{data,error}=await client.auth.getSession();if(error)throw error;await acceptSession(data.session);if(data.session)await refresh();}catch(error){if(session)message('page-message','会话恢复暂时失败，请检查网络；不会自动发送登录邮件。');}finally{resuming=false;emailLogin?.update();}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')resumeSession();});window.addEventListener('pageshow',resumeSession);
