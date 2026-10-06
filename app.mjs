@@ -80,9 +80,24 @@ function renderLoginButton(status){byId('login-submit').disabled=!client||status
 function badge(node,value){node.textContent=statusText(value);node.className='badge '+value;}
 function node(tag,value,className){const el=document.createElement(tag);if(value!=null)el.textContent=value;if(className)el.className=className;return el;}
 function message(id,value){text(id,value??'');byId(id).hidden=!value;}
+function macroEventLabel(value){return({CPI:'CPI',NFP:'非农',FOMC:'FOMC',FED_CHAIR:'美联储主席讲话'}[value]??String(value??''));}
+function sgtEventTime(value){
+ const date=new Date(value);if(!Number.isFinite(date.getTime()))return '—';
+ const parts=new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Singapore',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(date);
+ const get=type=>parts.find(part=>part.type===type)?.value??'';
+ return `${get('month')}月${get('day')}日 ${get('hour')}:${get('minute')}`;
+}
+function renderMacroEvents(data){
+ const box=byId('macro-events-list');if(!box)return;
+ const events=Array.isArray(data?.macro?.events)?data.macro.events:[];
+ if(!events.length){box.replaceChildren(node('small','暂无近期事件','subtle'));return;}
+ const visible=events.slice(0,3).map(event=>node('div',`${macroEventLabel(event.event_type)} · ${sgtEventTime(event.scheduled_at)}`,'macro-event-line'));
+ if(events.length>3)visible.push(node('small',`另有 ${events.length-3} 项`,'macro-event-more'));
+ box.replaceChildren(...visible);
+}
 function clearSession(){
  generation++;session=null;state=null;clearInterval(refreshTimer);clearInterval(chartTimer);clearTimeout(chartRetryTimer);clearTimeout(dailyChartRetryTimer);byId('dashboard').hidden=true;byId('login').hidden=false;
- byId('shadow-timeline').replaceChildren();byId('latest-shadow-event').replaceChildren();chart.clear();dailyChart.clear();chartLoader?.clear();dailyChartLoader?.clear();
+ byId('shadow-timeline').replaceChildren();byId('latest-shadow-event').replaceChildren();const macroBox=byId('macro-events-list');if(macroBox)macroBox.replaceChildren(node('small','暂无近期事件','subtle'));chart.clear();dailyChart.clear();chartLoader?.clear();dailyChartLoader?.clear();
  for(const id of ['account','shadow-last-success','shadow-zone','shadow-daily','shadow-alert-count','shadow-life','chart-price','chart-price-meta'])text(id,'—');
  for(const id of ['push-error','test-message','shadow-message'])text(id,'');
 }
@@ -105,6 +120,7 @@ function render(data){
  message('page-message',ss==='BACKOFF'||ss==='ERROR'?shadowMessage:null);
  const latest=shadowEvents[0];badge(byId('latest-shadow-badge'),latest?'TRIGGERED':'WAIT');byId('latest-shadow-event').replaceChildren(latest?shadowEventCard(latest,true):node('div','暂无 Shadow 命中','empty-state'));
  byId('shadow-timeline').replaceChildren(...(shadowEvents.length?shadowEvents.map(e=>shadowEventCard(e,false)):[node('p','暂无 Shadow 记录','subtle')]));
+ renderMacroEvents(data);
 
  badge(byId('push-status'),data.push.status);text('push-success',utc(data.push.last_success_at)+' UTC');text('push-attempts',String(data.push.attempts??0));text('push-error',data.push.last_failure?.error||data.push.error?chineseError({message:data.push.last_failure?.error??data.push.error}):'');
 
