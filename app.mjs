@@ -6,7 +6,7 @@ import{authOptions,createEmailLogin,loginError,clearRejectedSession}from './logi
 const endpoint='https://csyesqrldggjrtmdjbdi.supabase.co/functions/v1/btc-dashboard-api';
 const byId=id=>document.getElementById(id),text=(id,value)=>{byId(id).textContent=value;};
 const chart=createChart(byId('chart'),{mode:'behavior'}),dailyChart=createChart(byId('daily-chart'),{mode:'context'});let client,session=null,state=null,loading=false,generation=0,refreshTimer,chartTimer;
-let emailLogin,resuming=false,chartLoader,dailyChartLoader;
+let emailLogin,resuming=false,chartLoader,dailyChartLoader,chartRetryTimer,dailyChartRetryTimer;
 let loginStorage;try{loginStorage=window.localStorage;}catch{}
 const layoutStorageKey='btc-trigger-layout-v1';
 const signalRatingStorageKey='btc-trigger-signal-ratings-v1';
@@ -81,7 +81,7 @@ function badge(node,value){node.textContent=statusText(value);node.className='ba
 function node(tag,value,className){const el=document.createElement(tag);if(value!=null)el.textContent=value;if(className)el.className=className;return el;}
 function message(id,value){text(id,value??'');byId(id).hidden=!value;}
 function clearSession(){
- generation++;session=null;state=null;clearInterval(refreshTimer);clearInterval(chartTimer);byId('dashboard').hidden=true;byId('login').hidden=false;
+ generation++;session=null;state=null;clearInterval(refreshTimer);clearInterval(chartTimer);clearTimeout(chartRetryTimer);clearTimeout(dailyChartRetryTimer);byId('dashboard').hidden=true;byId('login').hidden=false;
  byId('shadow-timeline').replaceChildren();byId('latest-shadow-event').replaceChildren();chart.clear();dailyChart.clear();chartLoader?.clear();dailyChartLoader?.clear();
  for(const id of ['account','shadow-last-success','shadow-zone','shadow-daily','shadow-alert-count','shadow-life','chart-price','chart-price-meta'])text(id,'—');
  for(const id of ['push-error','test-message','shadow-message'])text(id,'');
@@ -115,15 +115,15 @@ chartLoader=createChartLoader({
  load:()=>api('chart',undefined,{interval:'4h'}),
  onSelection:()=>{},
  onLoading:value=>{byId('refresh-chart').disabled=value;byId('chart').setAttribute('aria-busy',String(value));if(value)text('chart-message','正在加载 4H K线…');},
- onCandles:candles=>{chart.update(state,candles,'4h');text('chart-caption','4小时 · '+candles.length+' 根 · 日线关键区联动 · UTC');const last=candles.at(-1);text('chart-price',last?price(last.close):'—');text('chart-price-meta',last?`4小时 · ${utc(last.close_time)} UTC · 已完成`:'—');text('chart-message','');},
- onError:error=>{if(session)text('chart-message','4H K线加载失败：'+chineseError(error));}
+ onCandles:candles=>{clearTimeout(chartRetryTimer);chart.update(state,candles,'4h');text('chart-caption','4小时 · '+candles.length+' 根 · 日线关键区联动 · UTC');const last=candles.at(-1);text('chart-price',last?price(last.close):'—');text('chart-price-meta',last?`4小时 · ${utc(last.close_time)} UTC · 已完成`:'—');text('chart-message','');},
+ onError:error=>{if(!session)return;if(error?.status===429){text('chart-message','4H 图表请求冷却中，约 30 秒后自动恢复…');clearTimeout(chartRetryTimer);chartRetryTimer=setTimeout(()=>{if(session&&document.visibilityState==='visible')refreshChart();},31000);return;}text('chart-message','4H K线加载失败：'+chineseError(error));}
 });
 dailyChartLoader=createChartLoader({
  load:()=>api('chart',undefined,{interval:'1d'}),
  onSelection:()=>{},
  onLoading:value=>{byId('refresh-daily-chart').disabled=value;byId('daily-chart').setAttribute('aria-busy',String(value));if(value)text('daily-chart-message','正在加载 1D K线…');},
- onCandles:candles=>{dailyChart.update(state,candles,'1d');text('daily-chart-caption','日线 · '+candles.length+' 根 · 关键位置来源 · UTC');text('daily-chart-message','');},
- onError:error=>{if(session)text('daily-chart-message','1D K线加载失败：'+chineseError(error));}
+ onCandles:candles=>{clearTimeout(dailyChartRetryTimer);dailyChart.update(state,candles,'1d');text('daily-chart-caption','日线 · '+candles.length+' 根 · 关键位置来源 · UTC');text('daily-chart-message','');},
+ onError:error=>{if(!session)return;if(error?.status===429){text('daily-chart-message','日线图表请求冷却中，约 30 秒后自动恢复…');clearTimeout(dailyChartRetryTimer);dailyChartRetryTimer=setTimeout(()=>{if(session&&document.visibilityState==='visible')refreshDailyChart();},31000);return;}text('daily-chart-message','1D K线加载失败：'+chineseError(error));}
 });
 async function refreshChart(){if(session)await chartLoader.select('4h',{force:true});}
 async function refreshDailyChart(){if(session)await dailyChartLoader.select('1d',{force:true});}
