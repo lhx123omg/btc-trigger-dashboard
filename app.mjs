@@ -89,15 +89,23 @@ function sgtEventTime(value){
 }
 function renderMacroEvents(data){
  const box=byId('macro-events-list');if(!box)return;
- const events=Array.isArray(data?.macro?.events)?data.macro.events:[];
- if(!events.length){box.replaceChildren(node('small','暂无近期事件','subtle'));return;}
- const visible=events.slice(0,3).map(event=>node('div',`${macroEventLabel(event.event_type)} · ${sgtEventTime(event.scheduled_at)}`,'macro-event-line'));
- if(events.length>3)visible.push(node('small',`另有 ${events.length-3} 项`,'macro-event-more'));
- box.replaceChildren(...visible);
+ const now=Date.now(),windowMs=30*60*1000;
+ const events=(Array.isArray(data?.macro?.events)?data.macro.events:[])
+  .filter(event=>{
+   const at=Date.parse(event.scheduled_at);
+   return Number.isFinite(at)&&at>=now&&at-now<=windowMs;
+  })
+  .sort((a,b)=>Date.parse(a.scheduled_at)-Date.parse(b.scheduled_at));
+ if(!events.length){box.replaceChildren();return;}
+ box.replaceChildren(...events.map(event=>node(
+  'div',
+  `${macroEventLabel(event.event_type)} · ${sgtEventTime(event.scheduled_at)}`,
+  'macro-event-line'
+ )));
 }
 function clearSession(){
  generation++;session=null;state=null;clearInterval(refreshTimer);clearInterval(chartTimer);clearTimeout(chartRetryTimer);clearTimeout(dailyChartRetryTimer);byId('dashboard').hidden=true;byId('login').hidden=false;
- byId('shadow-timeline').replaceChildren();byId('latest-shadow-event').replaceChildren();const macroBox=byId('macro-events-list');if(macroBox)macroBox.replaceChildren(node('small','暂无近期事件','subtle'));chart.clear();dailyChart.clear();chartLoader?.clear();dailyChartLoader?.clear();
+ byId('shadow-timeline').replaceChildren();byId('latest-shadow-event').replaceChildren();const macroBox=byId('macro-events-list');if(macroBox)macroBox.replaceChildren();chart.clear();dailyChart.clear();chartLoader?.clear();dailyChartLoader?.clear();
  for(const id of ['account','shadow-last-success','shadow-zone','shadow-daily','shadow-alert-count','shadow-life','chart-price','chart-price-meta'])text(id,'—');
  for(const id of ['push-error','test-message','shadow-message'])text(id,'');
 }
