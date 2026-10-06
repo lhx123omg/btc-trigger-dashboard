@@ -36,3 +36,10 @@
 .signal-rating[data-rating-value="没用"]{color:#ff9aaa;border-color:#7e3e4a;background:#301822}
 .signal-rating[data-rating-value="观察中"]{color:var(--amber);border-color:#6e592c;background:#2c2514}
 @media(max-width:650px){.signal-registry-row{grid-template-columns:auto minmax(0,1fr) auto}.signal-registry-main strong{font-size:12px}}
+
+.macro-registry-row{align-items:start}
+.macro-registry-row .signal-dot{margin-top:5px}
+.macro-registry-row .signal-rating{margin-top:0}
+.macro-events-list{display:grid;gap:2px;margin-top:5px;min-height:16px}
+.macro-event-line{font-size:10px;color:#b9c8d8;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.macro-event-more{font-size:9px;color:var(--muted)}
