@@ -146,8 +146,13 @@
     <section class="panel push" data-layout-id="bark-panel" data-layout-label="Bark 推送与测试"><div class="section-title"><div><span class="kicker">BARK</span><h2>推送与测试</h2></div><span id="push-status" class="badge">—</span></div><dl><div><dt>最近成功</dt><dd id="push-success">—</dd></div><div><dt>最近投递次数</dt><dd id="push-attempts">—</dd></div></dl><p id="push-error" class="subtle"></p><button id="test-push">发送测试通知</button> <button id="test-4h-structure">4H 结构测试推送</button><p class="subtle">4H 结构测试仅发送模拟规则说明，不代表真实市场触发。</p><p id="test-message" role="status" class="subtle"></p></section>
   </section>
 
+  <section class="panel" data-layout-id="structure-4h-observation" data-layout-label="4H 结构观察">
+    <div class="section-title"><div><span class="kicker">4H RESEARCH / OBSERVE ONLY</span><h2>4H 结构候选观察</h2></div><button id="refresh-4h-observations" class="quiet">查看观察记录</button></div>
+    <p class="subtle">只记录真实 4H 几何候选；K0 推进意义和 K1 停止语义仍待人工审核。不是已确认信号，不发送 Bark。</p>
+    <div id="4h-observation-list" class="shadow-timeline" role="status">点击「查看观察记录」读取候选。</div>
+  </section>
   <footer><span id="account">—</span><span>Shadow 状态 30 秒刷新 · K线 5 分钟刷新 · UTC</span></footer>
 </main>
 </div>
-<script type="module" src="app.mjs?v=20261012-4h-structure-test"></script>
+<script type="module" src="app.mjs?v=20261018-4h-observe"></script>
 </body></html>
