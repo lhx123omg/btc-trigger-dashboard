@@ -172,3 +172,26 @@ byId('zoom-in').addEventListener('click',()=>chart.zoom(-6));byId('zoom-out').ad
 async function resumeSession(){if(!client||resuming)return;resuming=true;try{const{data,error}=await client.auth.getSession();if(error)throw error;await acceptSession(data.session);if(data.session)await refresh();}catch(error){if(session)message('page-message','会话恢复暂时失败，请检查网络；不会自动发送登录邮件。');}finally{resuming=false;emailLogin?.update();}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')resumeSession();});window.addEventListener('pageshow',resumeSession);
 try{const configResponse=await fetch(endpoint+'?action=config',{headers:{'x-region':'ap-southeast-1'},cache:'no-store',signal:AbortSignal.timeout(10000)});if(!configResponse.ok)throw Error('登录服务暂时不可用');const config=await configResponse.json();client=createClient(config.url,config.publishable_key,{auth:authOptions});emailLogin=createEmailLogin({auth:client.auth,storage:loginStorage,onChange:renderLoginButton});emailLogin.update();setInterval(()=>emailLogin.update(),1000);window.addEventListener('storage',event=>{if(event.key==='btc-trigger-email-cooldown-until-v1')emailLogin.update();});client.auth.onAuthStateChange((event,value)=>{setTimeout(()=>acceptSession(value),0);});const {data,error}=await client.auth.getSession();if(error)throw error;await acceptSession(data.session);if(!data.session)text('login-message',emailLogin.status().seconds?'上一笔邮件请求正在冷却；如已收到登录邮件，请使用该邮件。':'请输入授权邮箱登录。');}catch(error){text('login-message',chineseError(error));byId('login-submit').disabled=true;}
+
+
+byId('refresh-4h-observations').addEventListener('click',async()=>{
+ const button=byId('refresh-4h-observations'),target=byId('4h-observation-list');
+ button.disabled=true;target.replaceChildren(node('div','正在读取 4H 候选观察记录…','empty-state'));
+ try{
+  const data=await api('4h-observations');
+  const rows=data.rows??[];
+  target.replaceChildren();
+  if(!rows.length){target.append(node('div','尚无符合基础价格几何的候选。观察将于每根 4H 收盘后运行。','empty-state'));return;}
+  for(const x of rows){
+   const card=node('article',null,'shadow-item');
+   card.append(
+    node('strong',`${x.direction==='UP'?'向上':'向下'}候选 · ${utc(x.k2_close_ms)} UTC`),
+    node('div',`K0 Open ${price(x.k0_open)} → K2 Close ${price(x.k2_close)}`,'range'),
+    node('small',`K0: ${utc(x.k0_open_ms)} · K1: ${utc(x.k1_open_ms)} · K2: ${utc(x.k2_open_ms)} UTC`),
+    node('small',`状态：${x.semantic_status} · 仅几何候选，未通过停止语义审核`)
+   );
+   target.append(card);
+  }
+ }catch(error){target.replaceChildren(node('div',chineseError(error),'empty-state'));}
+ finally{button.disabled=false;}
+});
