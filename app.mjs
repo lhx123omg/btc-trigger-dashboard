@@ -178,7 +178,7 @@ try{const configResponse=await fetch(endpoint+'?action=config',{headers:{'x-regi
 function asChartCandidate(x){
  return {
   kind:x.kind,direction:x.direction,
-  openMs:Number(x.kind==='A'?x.k2_open_ms:x.current_open_ms),
+  openMs:Number(x.kind==='A'?x.k3_open_ms:x.current_open_ms),
   k0Ms:x.kind==='A'?Number(x.k0_open_ms):null,
   k0Open:x.kind==='A'?Number(x.k0_open):null,
   semanticStatus:x.semantic_status
@@ -196,15 +196,15 @@ async function loadStructureCandidates(){
     .sort((x,y)=>y.time-x.time);
   candidateQaItems=rows.map(asChartCandidate);chart.setCandidates(candidateQaItems);
   target.replaceChildren();
-  if(!rows.length){target.append(node('div','暂无 A/B 结构几何候选。已收盘 4H 会持续观察。','empty-state'));return;}
+  if(!rows.length){target.append(node('div',`UTC ${data.utc_day} 今天尚无符合条件的 A/B 结构候选；A 必须 K3 才收破 K0。`,'empty-state'));return;}
   for(const x of rows){
    const chartItem=asChartCandidate(x);
    const card=node('article',null,'shadow-item candidate-qa-card');
-   const title=x.kind==='A'?'停止后开盘价突破':'反向实体吞没';
+   const title=x.kind==='A'?'日内 K3 收破 K0 开盘价':'日内反向实体吞没';
    const heading=node('strong',`${x.kind}｜${title}｜${x.direction==='UP'?'向上':'向下'}`);
    const time=node('small',`完成时间：${utc(x.time)} UTC · PENDING_QA`);
    const prices=x.kind==='A'
-    ?`K0 开盘 ${price(x.k0_open)} → K2 收盘 ${price(x.k2_close)}`
+    ?`K0 开盘 ${price(x.k0_open)} → K3 收盘 ${price(x.k3_close)} · K0/K1/K2/K3 同 UTC 日`
     :`前根实体 ${price(x.previous_open)} → ${price(x.previous_close)} · 本根 ${price(x.current_open)} → ${price(x.current_close)}`;
    const locate=node('button','在 4H 图上核对','quiet candidate-locate');
    locate.type='button';locate.addEventListener('click',()=>{
@@ -216,7 +216,7 @@ async function loadStructureCandidates(){
     text('chart-message',`正在核对 ${x.kind} 类 ${x.direction==='UP'?'向上':'向下'}候选｜${utc(x.time)} UTC。图上标记仅为几何候选，不代表正式信号。`);
     byId('chart').scrollIntoView({behavior:'smooth',block:'center'});
    });
-   card.append(heading,time,node('div',prices,'range'),node('small','仅作人工结构核对 · 尚未触发真实 Bark'),locate);
+   card.append(heading,time,node('div',prices,'range'),node('small','仅供当天结构人工核对 · 未发送真实 Bark'),locate);
    target.append(card);
   }
  }catch(error){
