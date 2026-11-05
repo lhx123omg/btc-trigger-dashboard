@@ -75,3 +75,8 @@
 .primary-grid>.chart-stack{display:grid;grid-template-columns:minmax(0,1fr);align-content:start;gap:12px;min-width:0}
 .chart-stack>.panel{min-width:0;width:100%}
 @media(max-width:650px){.primary-grid>.chart-stack{gap:10px}}
+
+/* Structure QA is a separate visual layer; NEVER style it like confirmed Shadow alerts. */
+.qa-legend{color:#adc0d0}
+.candidate-qa-card .candidate-locate{display:block;width:100%;min-height:35px;margin-top:9px;font-size:11px;padding:6px 8px;border-color:#3b556c;color:#a9d9ef}
+.candidate-qa-card .range{overflow-wrap:anywhere}
