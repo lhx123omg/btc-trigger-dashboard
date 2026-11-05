@@ -1,12 +1,13 @@
 import{createClient}from './vendor/supabase.js';
 import{utc,price,shadowStatus,statusText,chineseError}from './view-model.mjs';
-import{createChart}from './chart.mjs';
+import{createChart}from './chart.mjs?v=20261106-qa';
 import{createChartLoader}from './chart-periods.mjs';
 import{authOptions,createEmailLogin,loginError,clearRejectedSession}from './login.mjs';
 const endpoint='https://csyesqrldggjrtmdjbdi.supabase.co/functions/v1/btc-dashboard-api';
 const byId=id=>document.getElementById(id),text=(id,value)=>{byId(id).textContent=value;};
 const chart=createChart(byId('chart'),{mode:'behavior'}),dailyChart=createChart(byId('daily-chart'),{mode:'context'});let client,session=null,state=null,loading=false,generation=0,refreshTimer,chartTimer;
 let emailLogin,resuming=false,chartLoader,dailyChartLoader,chartRetryTimer,dailyChartRetryTimer;
+let candidateQaItems=[];
 let loginStorage;try{loginStorage=window.localStorage;}catch{}
 const layoutStorageKey='btc-trigger-layout-v1';
 const signalRatingStorageKey='btc-trigger-signal-ratings-v1';
@@ -174,7 +175,6 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 try{const configResponse=await fetch(endpoint+'?action=config',{headers:{'x-region':'ap-southeast-1'},cache:'no-store',signal:AbortSignal.timeout(10000)});if(!configResponse.ok)throw Error('登录服务暂时不可用');const config=await configResponse.json();client=createClient(config.url,config.publishable_key,{auth:authOptions});emailLogin=createEmailLogin({auth:client.auth,storage:loginStorage,onChange:renderLoginButton});emailLogin.update();setInterval(()=>emailLogin.update(),1000);window.addEventListener('storage',event=>{if(event.key==='btc-trigger-email-cooldown-until-v1')emailLogin.update();});client.auth.onAuthStateChange((event,value)=>{setTimeout(()=>acceptSession(value),0);});const {data,error}=await client.auth.getSession();if(error)throw error;await acceptSession(data.session);if(!data.session)text('login-message',emailLogin.status().seconds?'上一笔邮件请求正在冷却；如已收到登录邮件，请使用该邮件。':'请输入授权邮箱登录。');}catch(error){text('login-message',chineseError(error));byId('login-submit').disabled=true;}
 
 
-let candidateQaItems=[];
 function asChartCandidate(x){
  return {
   kind:x.kind,direction:x.direction,
