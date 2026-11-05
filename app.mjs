@@ -179,13 +179,22 @@ byId('refresh-4h-observations').addEventListener('click',async()=>{
  button.disabled=true;target.replaceChildren(node('div','正在读取 4H 候选观察记录…','empty-state'));
  try{
   const data=await api('4h-observations');
-  const rows=data.rows??[];
+  const rows=(data.rows??[]).map(x=>({...x,kind:'A',time:x.k2_close_ms})).concat((data.engulf_rows??[]).map(x=>({...x,kind:'B',time:x.current_close_ms}))).sort((x,y)=>y.time-x.time);
   target.replaceChildren();
-  if(!rows.length){target.append(node('div','尚无符合基础价格几何的候选。观察将于每根 4H 收盘后运行。','empty-state'));return;}
+  if(!rows.length){target.append(node('div','尚无 A/B 类结构候选。观察将在 4H 收盘后运行。','empty-state'));return;}
   for(const x of rows){
+   if(x.kind==='B'){
+    const card=node('article',null,'shadow-item');
+    card.append(
+      node('strong',`B｜反向实体吞没｜${x.direction==='UP'?'向上':'向下'} · ${utc(x.current_close_ms)} UTC`),
+      node('div',`前一根 O/C ${price(x.previous_open)} / ${price(x.previous_close)} → 当前 O/C ${price(x.current_open)} / ${price(x.current_close)}`,'range'),
+      node('small',`相邻 4H: ${utc(x.previous_open_ms)} → ${utc(x.current_open_ms)} UTC`),
+      node('small',`状态：${x.semantic_status} · 实体几何通过，市场意义待审；未发送 Bark`)
+    );target.append(card);continue;
+   }
    const card=node('article',null,'shadow-item');
    card.append(
-    node('strong',`${x.direction==='UP'?'向上':'向下'}候选 · ${utc(x.k2_close_ms)} UTC`),
+    node('strong',`A｜停止后突破关键开盘价｜${x.direction==='UP'?'向上':'向下'} · ${utc(x.k2_close_ms)} UTC`),
     node('div',`K0 Open ${price(x.k0_open)} → K2 Close ${price(x.k2_close)}`,'range'),
     node('small',`K0: ${utc(x.k0_open_ms)} · K1: ${utc(x.k1_open_ms)} · K2: ${utc(x.k2_open_ms)} UTC`),
     node('small',`状态：${x.semantic_status} · 仅几何候选，未通过停止语义审核`)
