@@ -105,7 +105,7 @@ function renderMacroEvents(data){
 }
 function clearSession(){
  generation++;session=null;state=null;clearInterval(refreshTimer);clearInterval(chartTimer);clearTimeout(chartRetryTimer);clearTimeout(dailyChartRetryTimer);byId('dashboard').hidden=true;byId('login').hidden=false;
- byId('shadow-timeline').replaceChildren();byId('latest-shadow-event').replaceChildren();const macroBox=byId('macro-events-list');if(macroBox)macroBox.replaceChildren();chart.clear();dailyChart.clear();chartLoader?.clear();dailyChartLoader?.clear();
+ candidateQaItems=[];byId('4h-observation-list').replaceChildren();byId('shadow-timeline').replaceChildren();byId('latest-shadow-event').replaceChildren();const macroBox=byId('macro-events-list');if(macroBox)macroBox.replaceChildren();chart.clear();dailyChart.clear();chartLoader?.clear();dailyChartLoader?.clear();
  for(const id of ['account','shadow-last-success','shadow-zone','shadow-daily','shadow-alert-count','shadow-life','chart-price','chart-price-meta'])text(id,'—');
  for(const id of ['push-error','test-message','shadow-message'])text(id,'');
 }
@@ -151,7 +151,7 @@ dailyChartLoader=createChartLoader({
 });
 async function refreshChart(){if(session)await chartLoader.select('4h',{force:true});}
 async function refreshDailyChart(){if(session)await dailyChartLoader.select('1d',{force:true});}
-async function acceptSession(value){if(!value){clearSession();return;}if(session?.user.id===value.user.id){session=value;return;}generation++;session=value;await refresh();if(!session)return;text('account',value.user.email??'已登录');clearInterval(refreshTimer);clearInterval(chartTimer);refreshTimer=setInterval(()=>{if(document.visibilityState==='visible')refresh();},30000);chartTimer=setInterval(()=>{if(document.visibilityState==='visible'){refreshChart();refreshDailyChart();}},300000);await Promise.all([refreshChart(),refreshDailyChart()]);}
+async function acceptSession(value){if(!value){clearSession();return;}if(session?.user.id===value.user.id){session=value;return;}generation++;session=value;await refresh();if(!session)return;text('account',value.user.email??'已登录');clearInterval(refreshTimer);clearInterval(chartTimer);refreshTimer=setInterval(()=>{if(document.visibilityState==='visible')refresh();},30000);chartTimer=setInterval(()=>{if(document.visibilityState==='visible'){refreshChart();refreshDailyChart();}},300000);await Promise.all([refreshChart(),refreshDailyChart()]);await loadStructureCandidates();}
 byId('login-form').addEventListener('submit',async event=>{event.preventDefault();if(!emailLogin||emailLogin.status().disabled)return;text('login-message','正在检查现有会话…');try{const result=await emailLogin.send(byId('email').value.trim(),new URL('./',location.href).href);if(result.kind==='session'){text('login-message','已有登录会话，正在恢复。');await acceptSession(result.session);await refresh();return;}if(result.kind==='sent'){text('login-message','邮件已发送，请在当前浏览器打开登录链接。');byId('verify-form').hidden=false;}}catch(error){text('login-message',loginError(error));}});
 byId('verify-form').addEventListener('submit',async event=>{event.preventDefault();try{const{error}=await client.auth.verifyOtp({email:byId('email').value.trim(),token:byId('otp').value.trim(),type:'email'});if(error)throw error;byId('otp').value='';}catch(error){text('login-message',chineseError(error));}});
 byId('logout').addEventListener('click',async()=>{clearSession();const{error}=await client.auth.signOut({scope:'local'});text('login-message',error?'本机已退出；服务端退出失败，请检查网络。':'已退出登录。');});
@@ -174,33 +174,54 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 try{const configResponse=await fetch(endpoint+'?action=config',{headers:{'x-region':'ap-southeast-1'},cache:'no-store',signal:AbortSignal.timeout(10000)});if(!configResponse.ok)throw Error('登录服务暂时不可用');const config=await configResponse.json();client=createClient(config.url,config.publishable_key,{auth:authOptions});emailLogin=createEmailLogin({auth:client.auth,storage:loginStorage,onChange:renderLoginButton});emailLogin.update();setInterval(()=>emailLogin.update(),1000);window.addEventListener('storage',event=>{if(event.key==='btc-trigger-email-cooldown-until-v1')emailLogin.update();});client.auth.onAuthStateChange((event,value)=>{setTimeout(()=>acceptSession(value),0);});const {data,error}=await client.auth.getSession();if(error)throw error;await acceptSession(data.session);if(!data.session)text('login-message',emailLogin.status().seconds?'上一笔邮件请求正在冷却；如已收到登录邮件，请使用该邮件。':'请输入授权邮箱登录。');}catch(error){text('login-message',chineseError(error));byId('login-submit').disabled=true;}
 
 
-byId('refresh-4h-observations').addEventListener('click',async()=>{
+let candidateQaItems=[];
+function asChartCandidate(x){
+ return {
+  kind:x.kind,direction:x.direction,
+  openMs:Number(x.kind==='A'?x.k2_open_ms:x.current_open_ms),
+  k0Ms:x.kind==='A'?Number(x.k0_open_ms):null,
+  k0Open:x.kind==='A'?Number(x.k0_open):null,
+  semanticStatus:x.semantic_status
+ };
+}
+async function loadStructureCandidates(){
  const button=byId('refresh-4h-observations'),target=byId('4h-observation-list');
  button.disabled=true;target.replaceChildren(node('div','正在读取 4H 候选观察记录…','empty-state'));
+ const epoch=generation;
  try{
   const data=await api('4h-observations');
-  const rows=(data.rows??[]).map(x=>({...x,kind:'A',time:x.k2_close_ms})).concat((data.engulf_rows??[]).map(x=>({...x,kind:'B',time:x.current_close_ms}))).sort((x,y)=>y.time-x.time);
+  if(epoch!==generation||!session)return;
+  const rows=(data.rows??[]).map(x=>({...x,kind:'A',time:x.k2_close_ms}))
+    .concat((data.engulf_rows??[]).map(x=>({...x,kind:'B',time:x.current_close_ms})))
+    .sort((x,y)=>y.time-x.time);
+  candidateQaItems=rows.map(asChartCandidate);chart.setCandidates(candidateQaItems);
   target.replaceChildren();
-  if(!rows.length){target.append(node('div','尚无 A/B 类结构候选。观察将在 4H 收盘后运行。','empty-state'));return;}
+  if(!rows.length){target.append(node('div','暂无 A/B 结构几何候选。已收盘 4H 会持续观察。','empty-state'));return;}
   for(const x of rows){
-   if(x.kind==='B'){
-    const card=node('article',null,'shadow-item');
-    card.append(
-      node('strong',`B｜反向实体吞没｜${x.direction==='UP'?'向上':'向下'} · ${utc(x.current_close_ms)} UTC`),
-      node('div',`前一根 O/C ${price(x.previous_open)} / ${price(x.previous_close)} → 当前 O/C ${price(x.current_open)} / ${price(x.current_close)}`,'range'),
-      node('small',`相邻 4H: ${utc(x.previous_open_ms)} → ${utc(x.current_open_ms)} UTC`),
-      node('small',`状态：${x.semantic_status} · 实体几何通过，市场意义待审；未发送 Bark`)
-    );target.append(card);continue;
-   }
-   const card=node('article',null,'shadow-item');
-   card.append(
-    node('strong',`A｜停止后突破关键开盘价｜${x.direction==='UP'?'向上':'向下'} · ${utc(x.k2_close_ms)} UTC`),
-    node('div',`K0 Open ${price(x.k0_open)} → K2 Close ${price(x.k2_close)}`,'range'),
-    node('small',`K0: ${utc(x.k0_open_ms)} · K1: ${utc(x.k1_open_ms)} · K2: ${utc(x.k2_open_ms)} UTC`),
-    node('small',`状态：${x.semantic_status} · 仅几何候选，未通过停止语义审核`)
-   );
+   const chartItem=asChartCandidate(x);
+   const card=node('article',null,'shadow-item candidate-qa-card');
+   const title=x.kind==='A'?'停止后开盘价突破':'反向实体吞没';
+   const heading=node('strong',`${x.kind}｜${title}｜${x.direction==='UP'?'向上':'向下'}`);
+   const time=node('small',`完成时间：${utc(x.time)} UTC · PENDING_QA`);
+   const prices=x.kind==='A'
+    ?`K0 开盘 ${price(x.k0_open)} → K2 收盘 ${price(x.k2_close)}`
+    :`前根实体 ${price(x.previous_open)} → ${price(x.previous_close)} · 本根 ${price(x.current_open)} → ${price(x.current_close)}`;
+   const locate=node('button','在 4H 图上核对','quiet candidate-locate');
+   locate.type='button';locate.addEventListener('click',()=>{
+    if(!chart.focusCandidate(chartItem)){
+     text('chart-message','该候选不在当前 4H K线加载范围内，无法定位；请核对图表历史范围。');
+     byId('chart').scrollIntoView({behavior:'smooth',block:'center'});
+     return;
+    }
+    text('chart-message',`正在核对 ${x.kind} 类 ${x.direction==='UP'?'向上':'向下'}候选｜${utc(x.time)} UTC。图上标记仅为几何候选，不代表正式信号。`);
+    byId('chart').scrollIntoView({behavior:'smooth',block:'center'});
+   });
+   card.append(heading,time,node('div',prices,'range'),node('small','仅作人工结构核对 · 尚未触发真实 Bark'),locate);
    target.append(card);
   }
- }catch(error){target.replaceChildren(node('div',chineseError(error),'empty-state'));}
- finally{button.disabled=false;}
-});
+ }catch(error){
+  if(epoch!==generation)return;
+  target.replaceChildren(node('div',chineseError(error),'empty-state'));
+ }finally{button.disabled=false;}
+}
+byId('refresh-4h-observations').addEventListener('click',loadStructureCandidates);
