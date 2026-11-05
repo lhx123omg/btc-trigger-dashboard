@@ -70,3 +70,8 @@
 @media(min-width:1051px){.primary-grid{grid-template-columns:minmax(0,1fr) minmax(285px,305px);gap:14px}.side-stack{gap:12px}.activity-rail .rail-log-group{gap:12px}}
 @media(max-width:1050px){.activity-rail{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}.activity-rail .rail-log-group{grid-column:2}.activity-rail .signal-test-hub{grid-column:1}}
 @media(max-width:650px){.topbar .test-shortcut{padding:6px 8px;font-size:11px}.activity-rail{display:grid;grid-template-columns:1fr}.activity-rail .signal-test-hub,.activity-rail .rail-log-group{grid-column:1}.activity-rail .shadow-timeline{max-height:190px}.activity-rail .panel{padding:12px}}
+
+/* Keep 4H and Daily together in the main chart column; events stay in the side rail. */
+.primary-grid>.chart-stack{display:grid;grid-template-columns:minmax(0,1fr);align-content:start;gap:12px;min-width:0}
+.chart-stack>.panel{min-width:0;width:100%}
+@media(max-width:650px){.primary-grid>.chart-stack{gap:10px}}
