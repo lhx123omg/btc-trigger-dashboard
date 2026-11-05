@@ -59,7 +59,7 @@
         <div class="chart-tools"><button id="zoom-in" class="quiet" aria-label="放大4小时图表">＋</button><button id="zoom-out" class="quiet" aria-label="缩小4小时图表">−</button><button id="refresh-chart" class="quiet">刷新</button></div>
       </div>
       <canvas id="chart" aria-label="BTC 4小时K线、Daily共享关键位置与Shadow Alert"></canvas>
-      <div class="legend"><span class="shared-context">■ 日线关键区</span><span class="daily-high-line">━ 前一日高点</span><span class="shadow-alert">● 触发信号</span><span>双指 / 按钮缩放</span></div>
+      <div class="legend"><span class="shared-context">■ 日线关键区</span><span class="daily-high-line">━ 前一日高点</span><span class="shadow-alert">● 正式 Shadow</span><span class="qa-legend">A?/B? 结构候选 · 待审核</span><span>双指 / 按钮缩放</span></div>
       <p id="chart-message" class="subtle" role="status"></p>
     </section>
 
@@ -124,7 +124,7 @@
           <section class="panel" data-layout-id="structure-4h-observation" data-layout-label="4H 结构观察">
     <div class="section-title"><div><span class="kicker">4H RESEARCH / OBSERVE ONLY</span><h2>4H 结构候选观察</h2></div><button id="refresh-4h-observations" class="quiet">查看观察记录</button></div>
     <p class="subtle">独立观察 A：停止后反向收破 K0 开盘价；B：相邻两根反方向实体吞没。均为几何候选（PENDING_QA），不是已确认的结构破坏；不发送 Bark。</p>
-    <div id="4h-observation-list" class="shadow-timeline" role="status">点击「查看观察记录」读取候选。</div>
+    <div id="4h-observation-list" class="shadow-timeline" role="status">点击「查看观察记录」，再选择「在 4H 图上核对」。</div>
   </section>
         </div>
       </div>
@@ -159,5 +159,5 @@
   <footer><span id="account">—</span><span>Shadow 状态 30 秒刷新 · K线 5 分钟刷新 · UTC</span></footer>
 </main>
 </div>
-<script type="module" src="app.mjs?v=20261105-4h-two-detectors"></script>
+<script type="module" src="app.mjs?v=20261106-qa-chart-1"></script>
 </body></html>
