@@ -4,6 +4,7 @@ import{price,utc}from './view-model.mjs';
 export function createChart(canvas,{mode='behavior'}={}){
  let interval=mode==='context'?'1d':defaultInterval;
  let candles=[],state=null,count=mode==='context'?70:64,end=0,startX=null,touchSpan=null;
+ let candidates=[],focused=null;
  const context=canvas.getContext('2d');
 
  function visibleEvents(slice){
@@ -93,6 +94,43 @@ export function createChart(canvas,{mode='behavior'}={}){
    }
   }
 
+  // QA-only overlay: recorded geometry candidates, never production alerts.
+  if(mode==='behavior'&&slice.length&&candidates.length){
+   const indexes=new Map(slice.map((c,i)=>[Number(c.time),i]));
+   const active=candidates.filter(o=>indexes.has(Number(o.openMs)));
+   if(focused?.kind==='A'&&indexes.has(Number(focused.k0Ms))&&indexes.has(Number(focused.openMs))){
+    const ix=indexes.get(Number(focused.k0Ms)),jx=indexes.get(Number(focused.openMs));
+    const keyPrice=Number(focused.k0Open);
+    if(Number.isFinite(keyPrice)){
+     const topLine=y(keyPrice);
+     context.strokeStyle='rgba(255,194,86,.93)';context.lineWidth=1.5;context.setLineDash([5,3]);
+     context.beginPath();context.moveTo(xAt(ix),topLine);context.lineTo(xAt(jx),topLine);context.stroke();context.setLineDash([]);
+     context.fillStyle='#ffd99d';context.font='10px system-ui';
+     context.fillText('K0 开盘 '+price(keyPrice),Math.max(pad.left,Math.min(xAt(ix),pad.left+w-108)),Math.max(10,topLine-9));
+    }
+   }
+   const used=new Map();
+   for(const o of active){
+    const i=indexes.get(Number(o.openMs)),c=slice[i],cx=xAt(i);
+    const selected=focused&&focused.kind===o.kind&&Number(focused.openMs)===Number(o.openMs);
+    const direction=o.direction==='UP';
+    const color=direction?'#50d3aa':'#f17b8e';
+    if(selected){
+     context.strokeStyle=color;context.lineWidth=2;context.setLineDash([3,2]);
+     const left=cx-Math.max(7,step*.42),top=Math.max(4,y(c.high)-7),bottom=Math.min(height-pad.bottom,y(c.low)+7);
+     context.strokeRect(left,top,Math.max(14,step*.84),Math.max(8,bottom-top));context.setLineDash([]);
+    }
+    const key=String(o.openMs),level=used.get(key)??0;used.set(key,level+1);
+    const labelY=Math.min(height-pad.bottom-13,Math.max(12,y(c.low)+11+level*17));
+    const label=o.kind+(selected?'·核对':'?');
+    context.fillStyle=selected?color:'rgba(142,172,194,.95)';
+    context.font=selected?'700 11px system-ui':'700 10px system-ui';
+    const labelWidth=context.measureText(label).width;
+    context.fillText(label,Math.max(pad.left,Math.min(cx-labelWidth/2,pad.left+w-labelWidth)),labelY);
+   }
+   context.font='11px system-ui';
+  }
+
   if(latest!=null){
    context.strokeStyle='rgba(240,189,99,.75)';context.setLineDash([4,3]);context.beginPath();context.moveTo(pad.left,y(latest));context.lineTo(pad.left+w,y(latest));context.stroke();context.setLineDash([]);
   }
@@ -114,8 +152,17 @@ export function createChart(canvas,{mode='behavior'}={}){
  canvas.addEventListener('touchend',()=>{touchSpan=null;});
  const observer=new ResizeObserver(draw);observer.observe(canvas);
  return{
+  setCandidates(items){if(mode!=='behavior')return;candidates=Array.isArray(items)?items.filter(o=>['A','B'].includes(o.kind)&&Number.isFinite(Number(o.openMs))):[];draw();},
+  focusCandidate(item){
+   if(mode!=='behavior'||!item)return false;
+   const index=candles.findIndex(c=>Number(c.time)===Number(item.openMs));
+   if(index<0)return false;
+   count=Math.max(24,Math.min(48,candles.length));
+   end=Math.min(candles.length,Math.max(count,index+Math.round(count*.58)));
+   focused=item;draw();return true;
+  },
   update(data,newCandles,period=interval){state=data;if(newCandles){interval=period;candles=newCandles.slice(-chartPeriod(interval).limit);end=candles.length;}draw();},
   setPeriod(period){interval=period;candles=[];count=period==='1d'?70:64;end=0;draw();},
-  zoom,clear(){candles=[];state=null;interval=mode==='context'?'1d':defaultInterval;end=0;draw();}
+  zoom,clear(){candles=[];state=null;candidates=[];focused=null;interval=mode==='context'?'1d':defaultInterval;end=0;draw();}
  };
 }
