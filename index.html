@@ -10,7 +10,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://csyesqrldggjrtmdjbdi.supabase.co; script-src 'self'; style-src 'self'; img-src 'self' data:; base-uri 'self'; form-action 'self'; object-src 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=20261105-compact-rail">
 <title>BTC 市场行为监控</title>
 </head>
 <body>
@@ -28,7 +28,7 @@
 <div id="dashboard" hidden>
 <header class="topbar">
   <div class="topbar-brand"><span class="brand-mark">BTC</span><div><strong>市场行为监控</strong><small>DAILY → 4H · SHADOW</small></div></div>
-  <div class="topbar-actions"><button id="layout-edit-toggle" class="quiet" type="button" aria-expanded="false">编辑布局</button><span id="shadow-header-status" class="badge">—</span><button id="logout" class="quiet">退出</button></div>
+  <div class="topbar-actions"><a class="quiet test-shortcut" href="#signal-test-center">信号测试</a><button id="layout-edit-toggle" class="quiet" type="button" aria-expanded="false">编辑布局</button><span id="shadow-header-status" class="badge">—</span><button id="logout" class="quiet">退出</button></div>
 </header>
 
 
@@ -99,6 +99,23 @@
           </article>
         </div>
       </section>
+
+      <div class="activity-rail" aria-label="测试中心与事件记录">
+        <section class="utility-grid signal-test-hub" id="signal-test-center">
+    <section class="panel push" data-layout-id="bark-panel" data-layout-label="信号测试中心"><div class="section-title"><div><span class="kicker">BARK</span><h2>信号测试中心</h2></div><span id="push-status" class="badge">—</span></div><dl><div><dt>最近成功</dt><dd id="push-success">—</dd></div><div><dt>最近投递次数</dt><dd id="push-attempts">—</dd></div></dl><p id="push-error" class="subtle"></p><div class="signal-test-actions"><button id="test-push">发送测试通知</button> <button id="test-4h-structure">4H 结构测试推送</button><p class="subtle">统一测试入口 · 仅发送测试通知，不代表真实市场触发。</p></div><p id="test-message" role="status" class="subtle"></p></section>
+  </section>
+        <div class="rail-log-group">
+          <section class="panel shadow-history-panel" data-layout-id="shadow-history" data-layout-label="Shadow 记录">
+    <div class="section-title"><div><span class="kicker">LIVE SHADOW</span><h2>V0 Shadow 记录</h2></div><small>最新 20 条 · UTC</small></div>
+    <div id="shadow-timeline" class="shadow-timeline"></div>
+  </section>
+          <section class="panel" data-layout-id="structure-4h-observation" data-layout-label="4H 结构观察">
+    <div class="section-title"><div><span class="kicker">4H RESEARCH / OBSERVE ONLY</span><h2>4H 结构候选观察</h2></div><button id="refresh-4h-observations" class="quiet">查看观察记录</button></div>
+    <p class="subtle">独立观察 A：停止后反向收破 K0 开盘价；B：相邻两根反方向实体吞没。均为几何候选（PENDING_QA），不是已确认的结构破坏；不发送 Bark。</p>
+    <div id="4h-observation-list" class="shadow-timeline" role="status">点击「查看观察记录」读取候选。</div>
+  </section>
+        </div>
+      </div>
     </aside>
   </section>
 
@@ -137,20 +154,6 @@
   </section>
 
 
-  <section class="panel shadow-history-panel" data-layout-id="shadow-history" data-layout-label="Shadow 记录">
-    <div class="section-title"><div><span class="kicker">LIVE SHADOW</span><h2>V0 Shadow 记录</h2></div><small>最近 20 条 · completed 4H · UTC</small></div>
-    <div id="shadow-timeline" class="shadow-timeline"></div>
-  </section>
-
-  <section class="utility-grid">
-    <section class="panel push" data-layout-id="bark-panel" data-layout-label="Bark 推送与测试"><div class="section-title"><div><span class="kicker">BARK</span><h2>推送与测试</h2></div><span id="push-status" class="badge">—</span></div><dl><div><dt>最近成功</dt><dd id="push-success">—</dd></div><div><dt>最近投递次数</dt><dd id="push-attempts">—</dd></div></dl><p id="push-error" class="subtle"></p><button id="test-push">发送测试通知</button> <button id="test-4h-structure">4H 结构测试推送</button><p class="subtle">4H 结构测试仅发送模拟规则说明，不代表真实市场触发。</p><p id="test-message" role="status" class="subtle"></p></section>
-  </section>
-
-  <section class="panel" data-layout-id="structure-4h-observation" data-layout-label="4H 结构观察">
-    <div class="section-title"><div><span class="kicker">4H RESEARCH / OBSERVE ONLY</span><h2>4H 结构候选观察</h2></div><button id="refresh-4h-observations" class="quiet">查看观察记录</button></div>
-    <p class="subtle">独立观察 A：停止后反向收破 K0 开盘价；B：相邻两根反方向实体吞没。均为几何候选（PENDING_QA），不是已确认的结构破坏；不发送 Bark。</p>
-    <div id="4h-observation-list" class="shadow-timeline" role="status">点击「查看观察记录」读取候选。</div>
-  </section>
   <footer><span id="account">—</span><span>Shadow 状态 30 秒刷新 · K线 5 分钟刷新 · UTC</span></footer>
 </main>
 </div>
