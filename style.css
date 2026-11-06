@@ -80,3 +80,5 @@
 .qa-legend{color:#adc0d0}
 .candidate-qa-card .candidate-locate{display:block;width:100%;min-height:35px;margin-top:9px;font-size:11px;padding:6px 8px;border-color:#3b556c;color:#a9d9ef}
 .candidate-qa-card .range{overflow-wrap:anywhere}
+
+.structure-qa-status{font-size:11px;color:#b6c9dc;border:1px dashed #3a5269;border-radius:8px;padding:7px 10px;margin:10px 0 5px;background:rgba(11,26,41,.78)}
