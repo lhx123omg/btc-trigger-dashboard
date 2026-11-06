@@ -8,6 +8,7 @@ const byId=id=>document.getElementById(id),text=(id,value)=>{byId(id).textConten
 const chart=createChart(byId('chart'),{mode:'behavior'}),dailyChart=createChart(byId('daily-chart'),{mode:'context'});let client,session=null,state=null,loading=false,generation=0,refreshTimer,chartTimer;
 let emailLogin,resuming=false,chartLoader,dailyChartLoader,chartRetryTimer,dailyChartRetryTimer;
 let candidateQaItems=[];
+let candidateQaLoading=false,lastCandidateQaFetch=0;
 let loginStorage;try{loginStorage=window.localStorage;}catch{}
 const layoutStorageKey='btc-trigger-layout-v1';
 const signalRatingStorageKey='btc-trigger-signal-ratings-v1';
@@ -106,7 +107,7 @@ function renderMacroEvents(data){
 }
 function clearSession(){
  generation++;session=null;state=null;clearInterval(refreshTimer);clearInterval(chartTimer);clearTimeout(chartRetryTimer);clearTimeout(dailyChartRetryTimer);byId('dashboard').hidden=true;byId('login').hidden=false;
- candidateQaItems=[];byId('4h-observation-list').replaceChildren();byId('shadow-timeline').replaceChildren();byId('latest-shadow-event').replaceChildren();const macroBox=byId('macro-events-list');if(macroBox)macroBox.replaceChildren();chart.clear();dailyChart.clear();chartLoader?.clear();dailyChartLoader?.clear();
+ candidateQaItems=[];lastCandidateQaFetch=0;text('structure-qa-status','未登录 · 候选状态不可用');byId('4h-observation-list').replaceChildren();byId('shadow-timeline').replaceChildren();byId('latest-shadow-event').replaceChildren();const macroBox=byId('macro-events-list');if(macroBox)macroBox.replaceChildren();chart.clear();dailyChart.clear();chartLoader?.clear();dailyChartLoader?.clear();
  for(const id of ['account','shadow-last-success','shadow-zone','shadow-daily','shadow-alert-count','shadow-life','chart-price','chart-price-meta'])text(id,'—');
  for(const id of ['push-error','test-message','shadow-message'])text(id,'');
 }
@@ -152,7 +153,7 @@ dailyChartLoader=createChartLoader({
 });
 async function refreshChart(){if(session)await chartLoader.select('4h',{force:true});}
 async function refreshDailyChart(){if(session)await dailyChartLoader.select('1d',{force:true});}
-async function acceptSession(value){if(!value){clearSession();return;}if(session?.user.id===value.user.id){session=value;return;}generation++;session=value;await refresh();if(!session)return;text('account',value.user.email??'已登录');clearInterval(refreshTimer);clearInterval(chartTimer);refreshTimer=setInterval(()=>{if(document.visibilityState==='visible')refresh();},30000);chartTimer=setInterval(()=>{if(document.visibilityState==='visible'){refreshChart();refreshDailyChart();}},300000);await Promise.all([refreshChart(),refreshDailyChart()]);await loadStructureCandidates();}
+async function acceptSession(value){if(!value){clearSession();return;}if(session?.user.id===value.user.id){session=value;return;}generation++;session=value;await refresh();if(!session)return;text('account',value.user.email??'已登录');clearInterval(refreshTimer);clearInterval(chartTimer);refreshTimer=setInterval(()=>{if(document.visibilityState==='visible')refresh();},30000);chartTimer=setInterval(()=>{if(document.visibilityState==='visible'){refreshChart();refreshDailyChart();loadStructureCandidates();}},300000);await Promise.all([refreshChart(),refreshDailyChart()]);await loadStructureCandidates();}
 byId('login-form').addEventListener('submit',async event=>{event.preventDefault();if(!emailLogin||emailLogin.status().disabled)return;text('login-message','正在检查现有会话…');try{const result=await emailLogin.send(byId('email').value.trim(),new URL('./',location.href).href);if(result.kind==='session'){text('login-message','已有登录会话，正在恢复。');await acceptSession(result.session);await refresh();return;}if(result.kind==='sent'){text('login-message','邮件已发送，请在当前浏览器打开登录链接。');byId('verify-form').hidden=false;}}catch(error){text('login-message',loginError(error));}});
 byId('verify-form').addEventListener('submit',async event=>{event.preventDefault();try{const{error}=await client.auth.verifyOtp({email:byId('email').value.trim(),token:byId('otp').value.trim(),type:'email'});if(error)throw error;byId('otp').value='';}catch(error){text('login-message',chineseError(error));}});
 byId('logout').addEventListener('click',async()=>{clearSession();const{error}=await client.auth.signOut({scope:'local'});text('login-message',error?'本机已退出；服务端退出失败，请检查网络。':'已退出登录。');});
@@ -185,16 +186,21 @@ function asChartCandidate(x){
  };
 }
 async function loadStructureCandidates(){
+ if(candidateQaLoading)return;
+ candidateQaLoading=true;
  const button=byId('refresh-4h-observations'),target=byId('4h-observation-list');
  button.disabled=true;target.replaceChildren(node('div','正在读取 4H 候选观察记录…','empty-state'));
  const epoch=generation;
  try{
   const data=await api('4h-observations');
   if(epoch!==generation||!session)return;
-  const rows=(data.rows??[]).map(x=>({...x,kind:'A',time:x.k2_close_ms}))
+  const rows=(data.rows??[]).map(x=>({...x,kind:'A',time:x.k3_close_ms}))
     .concat((data.engulf_rows??[]).map(x=>({...x,kind:'B',time:x.current_close_ms})))
     .sort((x,y)=>y.time-x.time);
   candidateQaItems=rows.map(asChartCandidate);chart.setCandidates(candidateQaItems);
+  const aCount=rows.filter(x=>x.kind==='A').length,bCount=rows.filter(x=>x.kind==='B').length;
+  text('structure-qa-status',`UTC ${data.utc_day} · A ${aCount} / B ${bCount} · ${rows.length?'均为待审核候选':'暂无成立的几何候选'}`);
+  lastCandidateQaFetch=Date.now();
   target.replaceChildren();
   if(!rows.length){target.append(node('div',`UTC ${data.utc_day} 今天尚无符合条件的 A/B 结构候选；A 必须 K3 才收破 K0。`,'empty-state'));return;}
   for(const x of rows){
@@ -221,7 +227,8 @@ async function loadStructureCandidates(){
   }
  }catch(error){
   if(epoch!==generation)return;
+  text('structure-qa-status','候选读取失败 · 请点击右侧“查看观察记录”重试');
   target.replaceChildren(node('div',chineseError(error),'empty-state'));
- }finally{button.disabled=false;}
+ }finally{button.disabled=false;candidateQaLoading=false;}
 }
 byId('refresh-4h-observations').addEventListener('click',loadStructureCandidates);
