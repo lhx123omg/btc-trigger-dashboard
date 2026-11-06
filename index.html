@@ -60,6 +60,7 @@
       </div>
       <canvas id="chart" aria-label="BTC 4小时K线、Daily共享关键位置与Shadow Alert"></canvas>
       <div class="legend"><span class="shared-context">■ 日线关键区</span><span class="daily-high-line">━ 前一日高点</span><span class="shadow-alert">● 正式 Shadow</span><span class="qa-legend">A?/B? 当日候选 · 待审核</span><span>双指 / 按钮缩放</span></div>
+      <p id="structure-qa-status" class="structure-qa-status" role="status">正在读取当日 A/B 结构候选…</p>
       <p id="chart-message" class="subtle" role="status"></p>
     </section>
 
@@ -159,5 +160,5 @@
   <footer><span id="account">—</span><span>Shadow 状态 30 秒刷新 · K线 5 分钟刷新 · UTC</span></footer>
 </main>
 </div>
-<script type="module" src="app.mjs?v=20261106-intraday-k3-1"></script>
+<script type="module" src="app.mjs?v=20261107-qa-status-k3-fix"></script>
 </body></html>
